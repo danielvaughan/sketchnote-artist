@@ -11,7 +11,7 @@ The application employs a chain of two specialized AI agents:
 1.  **The Summarizer Agent**:
     *   **Role**: Content Strategist.
     *   **Task**: Watches the YouTube video, analyzes the content, and synthesizes a structured "Visual Brief" containing the core thesis, main takeaways, and memorable quotes.
-    *   **Model**: Gemini 2.5 Flash.
+    *   **Model**: Gemini 3.0 Pro.
 
 2.  **The Artist Agent**:
     *   **Role**: Master Sketchnote Artist.
@@ -49,23 +49,32 @@ The application employs a chain of two specialized AI agents:
 
 ## 🎨 Usage
 
-Run the agent directly using `go run` and provide a prompt with a YouTube video URL.
+Run the agent directly using `go run` pointing to the main package:
 
 ```bash
-go run . "Create a sketchnote for this video: https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+go run ./cmd/sketchnote console
+```
+
+Enter the video URL at the User prompt:
+
+```bash
+User -> Create a sketchnote for this video: https://www.youtube.com/watch?v=dQw4w9WgXcQ
 ```
 
 The agent will:
 1.  Process the video.
 2.  Print the progress of the agents.
-3.  Save the resulting image as `generated_result_<timestamp>.png` in the current directory.
+3.  Save the resulting image as `generated_result_<timestamp>.png` (or based on the video title) in the current directory.
 
 ## 🏗️ Architecture
 
-*   **`agent.go`**: The main entry point. Initializes the Gemini models, tools, and constructs the `SequentialAgent` workflow.
-*   **`youtube_tool.go`**: A custom tool that sends video content to the Gemini model for analysis.
-*   **`image_tool.go`**: A custom tool that interfaces with the Imagen 3 model to generate and save images locally.
-*   **`prompts.go`**: Contains the system instructions that define the personas for the Summarizer and Artist agents.
+The project follows a standard Go layout:
+
+*   **`cmd/sketchnote/main.go`**: The main entry point. Initializes the Gemini models, tools, and constructs the `SequentialAgent` workflow.
+*   **`internal/agents/`**: Contains the definitions for the Summarizer and Artist agents.
+*   **`internal/tools/`**: Custom tools for YouTube summarization, image generation, and file saving.
+*   **`internal/flows/`**: Defines the sequential workflow logic.
+*   **`internal/prompts/`**: Contains the system instructions that define the personas.
 
 ## 📄 License
 

@@ -29,3 +29,11 @@
 
 # Gemini related files
 .gemini/
+/cmd/sketchnote/sketchnote-artist.log
+/test-briefs/
+/sketchnotes/
+/sketchnote
+/sketchnote-artist.log
+
+# System files
+.DS_Store
