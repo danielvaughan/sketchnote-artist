@@ -2,7 +2,7 @@
 
 The **Sketchnote Artist Agent** is an intelligent CLI application that turns YouTube videos into beautiful, hand-drawn style visual summaries (sketchnotes). 
 
-Built with Go and the [Google GenAI Agent Development Kit (ADK)](https://github.com/googleapis/genai-agent-adk-go), it demonstrates the power of sequential multi-agent workflows.
+Built with Go and the [Google Go Agent Development Kit (ADK)](https://github.com/google/adk-go), it demonstrates the power of sequential multi-agent workflows.
 
 ## 🚀 How It Works
 
@@ -16,7 +16,7 @@ The application employs a chain of two specialized AI agents:
 2.  **The Artist Agent**:
     *   **Role**: Master Sketchnote Artist.
     *   **Task**: Interprets the Visual Brief and orchestrates the generation of a high-quality image that mimics alcohol markers and ink on paper.
-    *   **Model**: Gemini 3.0 Pro Image (Imagen 3).
+    *   **Model**: Gemini 2.5 Flash (for reasoning), leveraging the `generate_image` tool which uses Gemini 3.0 Pro Image (Imagen 3).
 
 ## 🛠️ Prerequisites
 
