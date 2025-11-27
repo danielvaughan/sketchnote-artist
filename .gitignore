@@ -1,0 +1,31 @@
+# Binaries for the current project
+/sketchnote-artist
+/generated_result*.png
+
+# Environment variables
+.env
+
+# Dependencies
+/vendor/
+
+# Go compiled archives
+*.a
+
+# Linux
+*.o
+*.so
+
+# Darwin
+*.dylib
+
+# Windows
+*.dll
+*.exe
+*.sys
+*.obj
+
+# IntelliJ IDEA files
+.idea/
+
+# Gemini related files
+.gemini/
