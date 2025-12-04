@@ -66,6 +66,10 @@ The agent will:
 2.  Print the progress of the agents.
 3.  Save the resulting image as `generated_result_<timestamp>.png` (or based on the video title) in the current directory.
 
+## 🖼️ Example Output
+
+![Example Sketchnote](assets/example_sketchnote.png)
+
 ## 🌐 REST API Usage
 
 The application also includes a REST API server.
@@ -101,7 +105,12 @@ You can interact with the agent using standard HTTP requests.
       "appName": "sketchnote-artist",
       "userId": "test-user",
       "sessionId": "<session-id>",
-      "newMessage": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+      "newMessage": {
+        "role": "user",
+        "parts": [
+          { "text": "https://www.youtube.com/watch?v=dQw4w9WgXcQ" }
+        ]
+      }
     }' http://localhost:8080/run
     ```
 
