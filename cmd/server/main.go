@@ -2,12 +2,17 @@ package main
 
 import (
 	"context"
+	"log"
 	"log/slog"
+	"net/http"
 	"os"
 
 	"google.golang.org/adk/agent"
+	"google.golang.org/adk/artifact"
 	"google.golang.org/adk/cmd/launcher"
-	"google.golang.org/adk/cmd/launcher/full"
+	"google.golang.org/adk/memory"
+	"google.golang.org/adk/server/adkrest"
+	"google.golang.org/adk/session"
 
 	"github.com/joho/godotenv"
 
@@ -17,19 +22,11 @@ import (
 func main() {
 	ctx := context.Background()
 
-	// Initialize structured logging to file
-	logFile, err := os.OpenFile("sketchnote-artist.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
-	if err != nil {
-		slog.Error("Failed to open log file", "error", err)
-		os.Exit(1)
-	}
-	defer logFile.Close()
-
-	logger := slog.New(slog.NewTextHandler(logFile, nil))
+	// Initialize structured logging to stdout for server
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	slog.SetDefault(logger)
 
 	// Load .env file
-	// Try loading from current directory first, then fallback to root
 	if err := godotenv.Load(); err != nil {
 		if err := godotenv.Load("../../.env"); err != nil {
 			slog.Warn("No .env file found in current directory or project root")
@@ -49,15 +46,24 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Configure the launcher
+	// Configure the launcher with in-memory services
 	config := &launcher.Config{
-		AgentLoader: agent.NewSingleLoader(agentInstance),
+		AgentLoader:     agent.NewSingleLoader(agentInstance),
+		SessionService:  session.InMemoryService(),
+		ArtifactService: artifact.InMemoryService(),
+		MemoryService:   memory.InMemoryService(),
 	}
 
-	// Run the agent using the full launcher
-	l := full.NewLauncher()
-	if err := l.Execute(ctx, config, os.Args[1:]); err != nil {
-		slog.Error("Run failed", "error", err, "syntax", l.CommandLineSyntax())
-		os.Exit(1)
+	// Create the REST handler
+	handler := adkrest.NewHandler(config)
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	slog.Info("Starting REST server", "port", port)
+	if err := http.ListenAndServe(":"+port, handler); err != nil {
+		log.Fatal(err)
 	}
 }

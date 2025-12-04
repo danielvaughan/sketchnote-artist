@@ -5,7 +5,7 @@ The **Sketchnote Artist Agent** is a Go-based application built using the [Googl
 
 ## Architecture
 
-The system uses a **Sequential Agent** pattern (`SketchnoteFlow`) composed of:
+The system uses a **Sequential Agent** pattern (`sketchnote-artist`) composed of:
 
 1.  **Summarizer Agent (`Summarizer`)**:
     *   **Model**: `gemini-2.5-flash`

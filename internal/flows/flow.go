@@ -9,7 +9,7 @@ import (
 func NewSketchnoteFlow(summarizer agent.Agent, artist agent.Agent) (agent.Agent, error) {
 	return sequentialagent.New(sequentialagent.Config{
 		AgentConfig: agent.Config{
-			Name:        "SketchnoteFlow",
+			Name:        "sketchnote-artist",
 			Description: "A flow that summarizes a video and then creates a sketchnote.",
 			SubAgents:   []agent.Agent{summarizer, artist},
 		},

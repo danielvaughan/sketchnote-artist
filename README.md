@@ -66,6 +66,45 @@ The agent will:
 2.  Print the progress of the agents.
 3.  Save the resulting image as `generated_result_<timestamp>.png` (or based on the video title) in the current directory.
 
+## 🌐 REST API Usage
+
+The application also includes a REST API server.
+
+### Starting the Server
+
+```bash
+go run cmd/server/main.go
+```
+
+The server listens on port `8080` by default.
+
+### Consuming the API
+
+You can interact with the agent using standard HTTP requests.
+
+1.  **List Available Apps**:
+    ```bash
+    curl http://localhost:8080/list-apps
+    # Output: ["sketchnote-artist"]
+    ```
+
+2.  **Create a Session**:
+    ```bash
+    curl -X POST http://localhost:8080/apps/sketchnote-artist/users/test-user/sessions
+    ```
+    Copy the `id` from the JSON response.
+
+3.  **Run the Agent**:
+    Replace `<session-id>` with the ID from the previous step.
+    ```bash
+    curl -X POST -H "Content-Type: application/json" -d '{
+      "appName": "sketchnote-artist",
+      "userId": "test-user",
+      "sessionId": "<session-id>",
+      "newMessage": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+    }' http://localhost:8080/run
+    ```
+
 ## 🏗️ Architecture
 
 The project follows a standard Go layout:
