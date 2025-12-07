@@ -5,10 +5,10 @@ The **Sketchnote Artist Agent** is a Go-based application built using the [Googl
 
 ## Architecture
 
-The system uses a **Sequential Agent** pattern (`SketchnoteFlow`) composed of:
+The system uses a **Sequential Agent** pattern (`sketchnote-artist`) composed of:
 
-1.  **Summarizer Agent (`Summarizer`)**:
-    *   **Model**: `gemini-2.5-flash`
+1.  **Curator Agent (`Curator`)**:
+    *   **Model**: `gemini-3-pro-preview` (Configured with Low Thinking)
     *   **Tool**: `summarize_youtube_video`
     *   **Function**: Watches a YouTube video (via URL/URI), extracts key insights, and structures them into a "Visual Brief".
 2.  **Artist Agent (`Artist`)**:
@@ -58,8 +58,8 @@ The agent is designed to accept natural language commands.
 ## Key Files
 
 *   `agent.go`: Main entry point. Configures the agents, tools, and the sequential flow.
-*   `prompts.go`: Contains the system instructions for the `Summarizer` and `Artist` agents.
-*   `youtube_tool.go`: Implements the tool to send video content to the Gemini model for summarization.
+*   `prompts.go`: Contains the system instructions for the `Curator` and `Artist` agents.
+*   `youtube_summarizer.go`: Implements the tool to send video content to the Gemini model for summarization.
 *   `image_tool.go`: Implements the tool to generate images using Imagen 3 and save them locally.
 
 ## Development

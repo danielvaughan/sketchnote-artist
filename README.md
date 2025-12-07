@@ -64,7 +64,55 @@ User -> Create a sketchnote for this video: https://www.youtube.com/watch?v=dQw4
 The agent will:
 1.  Process the video.
 2.  Print the progress of the agents.
-3.  Save the resulting image as `generated_result_<timestamp>.png` (or based on the video title) in the current directory.
+3.  Save the resulting image as `Visual_Brief_<Title>.png` in the current directory.
+
+## 🖼️ Example Output
+
+![Example Sketchnote](assets/example_sketchnote.png)
+
+## 🌐 REST API Usage
+
+The application also includes a REST API server.
+
+### Starting the Server
+
+```bash
+go run cmd/server/main.go
+```
+
+The server listens on port `8080` by default.
+
+### Consuming the API
+
+You can interact with the agent using standard HTTP requests.
+
+1.  **List Available Apps**:
+    ```bash
+    curl http://localhost:8080/list-apps
+    # Output: ["sketchnote-artist"]
+    ```
+
+2.  **Create a Session**:
+    ```bash
+    curl -X POST http://localhost:8080/apps/sketchnote-artist/users/test-user/sessions
+    ```
+    Copy the `id` from the JSON response.
+
+3.  **Run the Agent**:
+    Replace `<session-id>` with the ID from the previous step.
+    ```bash
+    curl -X POST -H "Content-Type: application/json" -d '{
+      "appName": "sketchnote-artist",
+      "userId": "test-user",
+      "sessionId": "<session-id>",
+      "newMessage": {
+        "role": "user",
+        "parts": [
+          { "text": "https://www.youtube.com/watch?v=dQw4w9WgXcQ" }
+        ]
+      }
+    }' http://localhost:8080/run
+    ```
 
 ## 🏗️ Architecture
 
@@ -72,9 +120,21 @@ The project follows a standard Go layout:
 
 *   **`cmd/sketchnote/main.go`**: The main entry point. Initializes the Gemini models, tools, and constructs the `SequentialAgent` workflow.
 *   **`internal/agents/`**: Contains the definitions for the Summarizer and Artist agents.
-*   **`internal/tools/`**: Custom tools for YouTube summarization, image generation, and file saving.
+*   **`internal/tools/`**: Custom tools for YouTube summarization (`youtube_summarizer.go`), image generation (`generate_image_tool.go`), and file saving (`save_to_file_tool.go`).
 *   **`internal/flows/`**: Defines the sequential workflow logic.
 *   **`internal/prompts/`**: Contains the system instructions that define the personas.
+
+## 🧪 Running Tests
+
+To run unit tests (skipping slow integration tests):
+```bash
+go test ./...
+```
+
+To run all tests including integration tests (requires API key):
+```bash
+go test -tags=integration ./...
+```
 
 ## 📄 License
 

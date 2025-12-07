@@ -140,3 +140,29 @@ As you add more agents, tools, or complex logic, refactor into the standard layo
 ├── go.mod
 └── README.md
 ```
+## 4. Testing Best Practices
+
+### Integration Testing vs Unit Testing
+In Go, it is important to distinguish between unit tests (fast, isolated, mocked) and integration tests (sclower, external dependencies, real I/O).
+
+#### Implementation Pattern
+Use build tags to separate integration tests. This allows you to run unit tests quickly by default and opt-in to integration tests.
+
+1.  **Tagging:** Add `//go:build integration` at the very top of your integration test files.
+2.  **Naming:** Naming the file `_integration_test.go` can also be helpful but the tag is the functional separator.
+3.  **Running:**
+    *   `go test ./...` will **skip** these files (if configured to exclude, or if you strictly require the tag). *Correction: By default, `//go:build integration` means the file is ONLY included if `-tags=integration` is passed.*
+    *   `go test -tags=integration ./...` will include them.
+
+Alternatively, use `testing.Short()`:
+
+```go
+func TestIntegration(t *testing.T) {
+    if testing.Short() {
+        t.Skip("skipping integration test in short mode")
+    }
+    // ... test logic ...
+}
+```
+
+**Recommendation:** For tests requiring API keys or external services (like Gemini or YouTube), use the `//go:build integration` tag to prevent accidental failures in CI environments lacking credentials.

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"regexp"
 	"strings"
 	"time"
 
@@ -21,11 +20,13 @@ func NewImageGenerationTool(client *genai.Client) (tool.Tool, error) {
 			Description: "Generates an image based on a text prompt and saves it to disk. Returns the file path.",
 		},
 		func(ctx tool.Context, args struct {
-			Prompt string `json:"prompt" doc:"The detailed visual description of the image to generate."`
+			Prompt   string `json:"prompt" doc:"The detailed visual description of the image to generate."`
+			Filename string `json:"filename" doc:"The desired filename for the generated image (e.g., visual_brief.png)."`
 		}) (string, error) {
 			prompt := args.Prompt
+			filename := args.Filename
 			fmt.Printf("\n🎨  The artist is sketching...\n")
-			slog.Info("Generating image", "prompt", prompt)
+			slog.Info("Generating image", "prompt", prompt, "filename", filename)
 
 			// Call Imagen 3 model
 			resp, err := client.Models.GenerateContent(ctx, "gemini-3-pro-image-preview", genai.Text(prompt), nil)
@@ -38,13 +39,12 @@ func NewImageGenerationTool(client *genai.Client) (tool.Tool, error) {
 			for _, candidate := range resp.Candidates {
 				for _, part := range candidate.Content.Parts {
 					if part.InlineData != nil {
-						// Extract title for filename
-						title := extractTitle(prompt)
-						filename := fmt.Sprintf("%s.png", title)
-
 						// Ensure filename is unique if it already exists
 						if _, err := os.Stat(filename); err == nil {
-							filename = fmt.Sprintf("%s_%d.png", title, time.Now().UnixNano())
+							// If file exists, append timestamp before extension
+							ext := ".png"
+							name := strings.TrimSuffix(filename, ext)
+							filename = fmt.Sprintf("%s_%d%s", name, time.Now().UnixNano(), ext)
 						}
 
 						if err := os.WriteFile(filename, part.InlineData.Data, 0644); err != nil {
@@ -89,30 +89,4 @@ func NewImageGenerationTool(client *genai.Client) (tool.Tool, error) {
 			return errorDetails.String(), nil
 		},
 	)
-}
-
-func extractTitle(prompt string) string {
-	// regex to find "Title: 'Some Title'" or "Title Text: Some Title"
-	// We look for "Title" optionally followed by " Text", then a colon, optional whitespace and quotes
-	// We capture until the next quote or newline
-	re := regexp.MustCompile(`(?i)Title(?:\s+Text)?:\s*['"]?([^\n]+?)['"]?\s*(?:\n|$)`)
-	match := re.FindStringSubmatch(prompt)
-
-	if len(match) > 1 {
-		title := match[1]
-		// Sanitize title
-		// Replace spaces with underscores
-		title = strings.ReplaceAll(title, " ", "_")
-		// Remove non-alphanumeric characters (except underscores and hyphens)
-		reg := regexp.MustCompile(`[^a-zA-Z0-9_\-]`)
-		title = reg.ReplaceAllString(title, "")
-		// Truncate if too long
-		if len(title) > 100 {
-			title = title[:100]
-		}
-		return title
-	}
-
-	// Default fallback
-	return fmt.Sprintf("generated_result_%d", time.Now().UnixNano())
 }
