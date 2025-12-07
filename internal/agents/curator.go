@@ -21,6 +21,8 @@ import (
 	"github.com/danielvaughan/sketchnote-artist/internal/tools"
 )
 
+const CuratorEmoji = "🧐"
+
 // NewCurator creates the curator agent.
 func NewCurator(ctx context.Context, apiKey string) (agent.Agent, error) {
 	// Initialize the Gemini model for the Curator agent
@@ -78,7 +80,7 @@ func NewCurator(ctx context.Context, apiKey string) (agent.Agent, error) {
 			}
 
 			// Inject URL into instruction
-			fmt.Printf("\n🤖 The Curator is analyzing the video to create a visual brief: %s\n", input)
+			fmt.Printf("\n%s The Curator is analyzing the video to create a visual brief: %s\n", CuratorEmoji, input)
 			instruction := strings.ReplaceAll(prompts.CuratorInstruction, "{YouTubeURL}", input)
 
 			// Create dynamic agent
@@ -103,7 +105,7 @@ func NewCurator(ctx context.Context, apiKey string) (agent.Agent, error) {
 						return
 					}
 				}
-				fmt.Printf("\n🤖 The Curator has completed the visual brief in %s\n", time.Since(startTime).Round(time.Second))
+				fmt.Printf("\n%s The Curator has completed the visual brief in %s\n", CuratorEmoji, time.Since(startTime).Round(time.Second))
 			}
 		},
 	})

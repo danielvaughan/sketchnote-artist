@@ -17,6 +17,8 @@ import (
 	"github.com/danielvaughan/sketchnote-artist/internal/tools"
 )
 
+const ArtistEmoji = "🎨"
+
 // NewArtist creates the artist agent.
 func NewArtist(ctx context.Context, apiKey string) (agent.Agent, error) {
 	// Initialize genai client for the tool
@@ -27,7 +29,7 @@ func NewArtist(ctx context.Context, apiKey string) (agent.Agent, error) {
 		return nil, fmt.Errorf("failed to create genai client: %w", err)
 	}
 
-	// Initialize the Gemini 3.0 Pro Image model for art
+	// Initialize the model for the Artist agent
 	model, err := gemini.NewModel(ctx, "gemini-2.5-flash", &genai.ClientConfig{
 		APIKey: apiKey,
 	})
@@ -62,7 +64,16 @@ func NewArtist(ctx context.Context, apiKey string) (agent.Agent, error) {
 				slog.Warn("Artist skipping execution: visual_brief missing from state", "error", err)
 				return func(yield func(*session.Event, error) bool) {}
 			}
-			return innerAgent.Run(ctx)
+
+			fmt.Printf("\n%s The Artist is reading the visual brief...\n", ArtistEmoji)
+
+			return func(yield func(*session.Event, error) bool) {
+				for event, err := range innerAgent.Run(ctx) {
+					if !yield(event, err) {
+						return
+					}
+				}
+			}
 		},
 	})
 }
