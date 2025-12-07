@@ -40,7 +40,10 @@ func main() {
 	}
 
 	// Create the Sketchnote Agent
-	agentInstance, err := app.NewSketchnoteAgent(ctx, apiKey)
+	agentInstance, err := app.NewSketchnoteAgent(ctx, app.Config{
+		APIKey:  apiKey,
+		Verbose: false,
+	})
 	if err != nil {
 		slog.Error("Failed to create agent", "error", err)
 		os.Exit(1)
@@ -63,7 +66,39 @@ func main() {
 	}
 
 	slog.Info("Starting REST server", "port", port)
-	if err := http.ListenAndServe(":"+port, handler); err != nil {
+
+	// Wrap the ADK handler with custom routing for UI and images
+	finalHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Serve UI at root or /ui/
+		if r.URL.Path == "/" || r.URL.Path == "/index.html" {
+			http.ServeFile(w, r, "web/index.html")
+			return
+		}
+
+		// Serve static assets (css, js)
+		if r.URL.Path == "/style.css" || r.URL.Path == "/app.js" {
+			http.ServeFile(w, r, "web"+r.URL.Path)
+			return
+		}
+
+		// Serve generated images
+		if len(r.URL.Path) > 8 && r.URL.Path[:8] == "/images/" {
+			// Serve from current directory, strip /images/ prefix
+			filename := r.URL.Path[8:]
+			// Basic security: prevent directory traversal
+			if filename == "" || filename == "." || filename == ".." {
+				http.NotFound(w, r)
+				return
+			}
+			http.ServeFile(w, r, "./"+filename)
+			return
+		}
+
+		// Fallback to ADK API handler
+		handler.ServeHTTP(w, r)
+	})
+
+	if err := http.ListenAndServe(":"+port, finalHandler); err != nil {
 		log.Fatal(err)
 	}
 }

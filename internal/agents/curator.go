@@ -24,7 +24,7 @@ import (
 const CuratorEmoji = "🧐"
 
 // NewCurator creates the curator agent.
-func NewCurator(ctx context.Context, apiKey string) (agent.Agent, error) {
+func NewCurator(ctx context.Context, apiKey string, verbose bool) (agent.Agent, error) {
 	// Initialize the Gemini model for the Curator agent
 	model, err := gemini.NewModel(ctx, "gemini-3-pro-preview", &genai.ClientConfig{
 		APIKey: apiKey,
@@ -80,7 +80,9 @@ func NewCurator(ctx context.Context, apiKey string) (agent.Agent, error) {
 			}
 
 			// Inject URL into instruction
-			fmt.Printf("\n%s The Curator is analyzing the video to create a visual brief: %s\n", CuratorEmoji, input)
+			if verbose {
+				fmt.Printf("\n%s The Curator is analyzing the video to create a visual brief: %s\n", CuratorEmoji, input)
+			}
 			instruction := strings.ReplaceAll(prompts.CuratorInstruction, "{YouTubeURL}", input)
 
 			// Create dynamic agent
@@ -105,7 +107,9 @@ func NewCurator(ctx context.Context, apiKey string) (agent.Agent, error) {
 						return
 					}
 				}
-				fmt.Printf("\n%s The Curator has completed the visual brief in %s\n", CuratorEmoji, time.Since(startTime).Round(time.Second))
+				if verbose {
+					fmt.Printf("\n%s The Curator has completed the visual brief in %s\n", CuratorEmoji, time.Since(startTime).Round(time.Second))
+				}
 			}
 		},
 	})

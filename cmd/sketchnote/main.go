@@ -43,7 +43,10 @@ func main() {
 	}
 
 	// Create the Sketchnote Agent
-	agentInstance, err := app.NewSketchnoteAgent(ctx, apiKey)
+	agentInstance, err := app.NewSketchnoteAgent(ctx, app.Config{
+		APIKey:  apiKey,
+		Verbose: true,
+	})
 	if err != nil {
 		slog.Error("Failed to create agent", "error", err)
 		os.Exit(1)

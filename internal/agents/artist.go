@@ -20,7 +20,7 @@ import (
 const ArtistEmoji = "🎨"
 
 // NewArtist creates the artist agent.
-func NewArtist(ctx context.Context, apiKey string) (agent.Agent, error) {
+func NewArtist(ctx context.Context, apiKey string, verbose bool) (agent.Agent, error) {
 	// Initialize genai client for the tool
 	client, err := genai.NewClient(ctx, &genai.ClientConfig{
 		APIKey: apiKey,
@@ -65,7 +65,9 @@ func NewArtist(ctx context.Context, apiKey string) (agent.Agent, error) {
 				return func(yield func(*session.Event, error) bool) {}
 			}
 
-			fmt.Printf("\n%s The Artist is reading the visual brief...\n", ArtistEmoji)
+			if verbose {
+				fmt.Printf("\n%s The Artist is reading the visual brief...\n", ArtistEmoji)
+			}
 
 			return func(yield func(*session.Event, error) bool) {
 				for event, err := range innerAgent.Run(ctx) {

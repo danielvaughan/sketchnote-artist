@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sketchnote Artist</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="background-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <main class="glass-container">
+        <header>
+            <h1>Sketchnote Artist</h1>
+            <p>Turn YouTube videos into beautiful visual summaries.</p>
+        </header>
+
+        <section class="input-section">
+            <div class="input-group">
+                <input type="text" id="youtubeUrl" placeholder="Paste YouTube URL here..." autocomplete="off">
+                <button id="generateBtn" onclick="generateSketchnote()">
+                    <span class="btn-text">Generate Art</span>
+                    <span class="loader hidden"></span>
+                </button>
+            </div>
+            <p id="statusMessage" class="status-message"></p>
+        </section>
+
+        <section id="resultSection" class="result-section hidden">
+            <div class="image-wrapper">
+                <img id="resultImage" src="" alt="Generated Sketchnote">
+                <div class="overlay">
+                    <button class="icon-btn" onclick="downloadImage()">Download</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
