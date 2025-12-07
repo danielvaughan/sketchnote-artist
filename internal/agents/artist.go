@@ -3,10 +3,13 @@ package agents
 import (
 	"context"
 	"fmt"
+	"iter"
+	"log/slog"
 
 	"google.golang.org/adk/agent"
 	"google.golang.org/adk/agent/llmagent"
 	"google.golang.org/adk/model/gemini"
+	"google.golang.org/adk/session"
 	"google.golang.org/adk/tool"
 	"google.golang.org/genai"
 
@@ -37,12 +40,29 @@ func NewArtist(ctx context.Context, apiKey string) (agent.Agent, error) {
 		return nil, fmt.Errorf("failed to create image generation tool: %w", err)
 	}
 
-	return llmagent.New(llmagent.Config{
+	innerAgent, err := llmagent.New(llmagent.Config{
 		Name:        "Artist",
 		Model:       model,
 		Description: "Creates sketchnotes from visual briefs.",
 		Instruction: prompts.ArtistInstruction,
 		OutputKey:   "sketchnote",
 		Tools:       []tool.Tool{imageTool},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create inner artist agent: %w", err)
+	}
+
+	return agent.New(agent.Config{
+		Name:        "Artist",
+		Description: "Creates sketchnotes from visual briefs.",
+		Run: func(ctx agent.InvocationContext) iter.Seq2[*session.Event, error] {
+			// Check if the visual brief exists in the state
+			_, err := ctx.Session().State().Get("visual_brief")
+			if err != nil {
+				slog.Warn("Artist skipping execution: visual_brief missing from state", "error", err)
+				return func(yield func(*session.Event, error) bool) {}
+			}
+			return innerAgent.Run(ctx)
+		},
 	})
 }

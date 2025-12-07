@@ -7,11 +7,10 @@ import (
 
 	"google.golang.org/adk/tool"
 	"google.golang.org/adk/tool/functiontool"
-	"google.golang.org/genai"
 )
 
 // NewFileSaver creates a new tool for saving content to a file.
-func NewFileSaver(client *genai.Client) (tool.Tool, error) {
+func NewFileSaver() (tool.Tool, error) {
 	return functiontool.New(
 		functiontool.Config{
 			Name:        "save_to_file",

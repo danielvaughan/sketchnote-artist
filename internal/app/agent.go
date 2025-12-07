@@ -12,10 +12,10 @@ import (
 
 // NewSketchnoteAgent creates the sequential sketchnote agent.
 func NewSketchnoteAgent(ctx context.Context, apiKey string) (agent.Agent, error) {
-	// Create the Summarizer Agent
-	summarizerAgent, err := agents.NewSummarizer(ctx, apiKey)
+	// Create the Curator Agent
+	curatorAgent, err := agents.NewCurator(ctx, apiKey)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create summarizer agent: %w", err)
+		return nil, fmt.Errorf("failed to create curator agent: %w", err)
 	}
 
 	// Create the Artist Agent
@@ -25,7 +25,7 @@ func NewSketchnoteAgent(ctx context.Context, apiKey string) (agent.Agent, error)
 	}
 
 	// Create the Sequential Agent
-	seqAgent, err := flows.NewSketchnoteFlow(summarizerAgent, artistAgent)
+	seqAgent, err := flows.NewSketchnoteFlow(curatorAgent, artistAgent)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create sequential agent: %w", err)
 	}

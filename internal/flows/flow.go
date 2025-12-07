@@ -6,12 +6,12 @@ import (
 )
 
 // NewSketchnoteFlow creates the sequential flow for the sketchnote artist.
-func NewSketchnoteFlow(summarizer agent.Agent, artist agent.Agent) (agent.Agent, error) {
+func NewSketchnoteFlow(curator agent.Agent, artist agent.Agent) (agent.Agent, error) {
 	return sequentialagent.New(sequentialagent.Config{
 		AgentConfig: agent.Config{
 			Name:        "sketchnote-artist",
 			Description: "A flow that summarizes a video and then creates a sketchnote.",
-			SubAgents:   []agent.Agent{summarizer, artist},
+			SubAgents:   []agent.Agent{curator, artist},
 		},
 	})
 }
