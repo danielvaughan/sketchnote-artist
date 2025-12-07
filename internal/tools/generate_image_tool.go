@@ -25,7 +25,7 @@ func NewImageGenerationTool(client *genai.Client) (tool.Tool, error) {
 		}) (string, error) {
 			prompt := args.Prompt
 			filename := args.Filename
-			fmt.Printf("\n🎨  The artist is sketching...\n")
+			fmt.Printf("\n🎨 The Artist is sketching...\n")
 			slog.Info("Generating image", "prompt", prompt, "filename", filename)
 
 			// Call Imagen 3 model
@@ -52,7 +52,7 @@ func NewImageGenerationTool(client *genai.Client) (tool.Tool, error) {
 							return "", err
 						}
 						slog.Info("Image saved", "filename", filename)
-						fmt.Printf("\n🎨  The artist has finished! View your sketchnote here: %s\n", filename)
+						fmt.Printf("\n🎨 The Artist has finished! View your sketchnote here: %s\n", filename)
 						return fmt.Sprintf("Image successfully saved to %s", filename), nil
 					}
 				}

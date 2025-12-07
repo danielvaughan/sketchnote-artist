@@ -55,16 +55,16 @@ Run the agent directly using `go run` pointing to the main package:
 go run ./cmd/sketchnote console
 ```
 
-Enter the video URL at the User prompt:
+Enter just the video URL at the User prompt:
 
 ```bash
-User -> Create a sketchnote for this video: https://www.youtube.com/watch?v=dQw4w9WgXcQ
+User -> https://www.youtube.com/watch?v=dQw4w9WgXcQ
 ```
 
 The agent will:
 1.  Process the video.
 2.  Print the progress of the agents.
-3.  Save the resulting image as `Visual_Brief_<Title>.png` in the current directory.
+3.  Save the resulting image as `<Title>.png` in the current directory.
 
 ## 🖼️ Example Output
 
