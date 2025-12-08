@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"os"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/joho/godotenv"
 
 	"github.com/danielvaughan/sketchnote-artist/internal/app"
+	"github.com/danielvaughan/sketchnote-artist/internal/observability"
 )
 
 func main() {
@@ -42,10 +44,17 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Define console reporter
+	consoleReporter := func(msg string, details ...interface{}) {
+		fmt.Printf("\n%s\n", msg)
+	}
+
+	// Inject reporter into context
+	ctx = observability.WithStatusReporter(ctx, consoleReporter)
+
 	// Create the Sketchnote Agent
 	agentInstance, err := app.NewSketchnoteAgent(ctx, app.Config{
-		APIKey:  apiKey,
-		Verbose: true,
+		APIKey: apiKey,
 	})
 	if err != nil {
 		slog.Error("Failed to create agent", "error", err)
