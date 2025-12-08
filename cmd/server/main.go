@@ -89,7 +89,7 @@ func main() {
 				http.NotFound(w, r)
 				return
 			}
-			http.ServeFile(w, r, "./"+filename)
+			http.ServeFile(w, r, "sketchnotes/"+filename)
 			return
 		}
 

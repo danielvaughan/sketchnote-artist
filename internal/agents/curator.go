@@ -40,7 +40,7 @@ func NewCurator(ctx context.Context, apiKey string) (agent.Agent, error) {
 		return nil, fmt.Errorf("failed to create YouTube summarizer tool: %w", err)
 	}
 
-	fileTool, err := tools.NewFileSaver()
+	fileTool, err := tools.NewFileSaver("visual-briefs")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create file saver tool: %w", err)
 	}

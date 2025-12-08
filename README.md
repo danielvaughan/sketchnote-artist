@@ -64,7 +64,27 @@ User -> https://www.youtube.com/watch?v=dQw4w9WgXcQ
 The agent will:
 1.  Process the video.
 2.  Print the progress of the agents.
-3.  Save the resulting image as `<Title>.png` in the current directory.
+3.  Save the resulting image as `generated_result_<timestamp>.png` (or based on the video title) in the current directory.
+
+## 🧪 Testing
+
+To run the automated end-to-end UI tests:
+
+1.  **Install Node.js dependencies:**
+    ```bash
+    npm install
+    ```
+
+2.  **Install Playwright browsers:**
+    ```bash
+    npx playwright install --with-deps
+    ```
+
+3.  **Run the tests:**
+    ```bash
+    npx playwright test
+    ```
+    This will automatically start the backend server and run the browser tests against it.
 
 ## 🖼️ Example Output
 

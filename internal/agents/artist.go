@@ -38,7 +38,7 @@ func NewArtist(ctx context.Context, apiKey string) (agent.Agent, error) {
 		return nil, fmt.Errorf("failed to create artist model: %w", err)
 	}
 
-	imageTool, err := tools.NewImageGenerationTool(client)
+	imageTool, err := tools.NewImageGenerationTool(client, "sketchnotes")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create image generation tool: %w", err)
 	}
