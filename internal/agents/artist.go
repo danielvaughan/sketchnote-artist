@@ -13,6 +13,7 @@ import (
 	"google.golang.org/adk/tool"
 	"google.golang.org/genai"
 
+	"github.com/danielvaughan/sketchnote-artist/internal/observability"
 	"github.com/danielvaughan/sketchnote-artist/internal/prompts"
 	"github.com/danielvaughan/sketchnote-artist/internal/tools"
 )
@@ -20,7 +21,7 @@ import (
 const ArtistEmoji = "🎨"
 
 // NewArtist creates the artist agent.
-func NewArtist(ctx context.Context, apiKey string, verbose bool) (agent.Agent, error) {
+func NewArtist(ctx context.Context, apiKey string) (agent.Agent, error) {
 	// Initialize genai client for the tool
 	client, err := genai.NewClient(ctx, &genai.ClientConfig{
 		APIKey: apiKey,
@@ -65,9 +66,7 @@ func NewArtist(ctx context.Context, apiKey string, verbose bool) (agent.Agent, e
 				return func(yield func(*session.Event, error) bool) {}
 			}
 
-			if verbose {
-				fmt.Printf("\n%s The Artist is reading the visual brief...\n", ArtistEmoji)
-			}
+			observability.Report(ctx, fmt.Sprintf("%s The Artist is reading the visual brief...", ArtistEmoji))
 
 			return func(yield func(*session.Event, error) bool) {
 				for event, err := range innerAgent.Run(ctx) {

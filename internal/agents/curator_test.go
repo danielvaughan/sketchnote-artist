@@ -110,7 +110,7 @@ func TestCurator_Run_GracefulFailure(t *testing.T) {
 	apiKey := "dummy_key"
 
 	// Create agent
-	cAgent, err := NewCurator(ctx, apiKey, false)
+	cAgent, err := NewCurator(ctx, apiKey)
 	if err != nil {
 		t.Fatalf("Failed to create Curator: %v", err)
 	}

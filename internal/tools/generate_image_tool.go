@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/danielvaughan/sketchnote-artist/internal/observability"
 	"google.golang.org/adk/tool"
 	"google.golang.org/adk/tool/functiontool"
 	"google.golang.org/genai"
@@ -25,8 +26,8 @@ func NewImageGenerationTool(client *genai.Client) (tool.Tool, error) {
 		}) (string, error) {
 			prompt := args.Prompt
 			filename := args.Filename
-			fmt.Printf("\n🎨 The Artist is sketching...\n")
-			slog.Info("Generating image", "prompt", prompt, "filename", filename)
+			observability.Report(ctx, fmt.Sprintf("\n%s The Artist is sketching...", "🎨"))
+			slog.Info("Generating image", "filename", filename)
 
 			// Call Imagen 3 model
 			resp, err := client.Models.GenerateContent(ctx, "gemini-3-pro-image-preview", genai.Text(prompt), nil)
@@ -52,7 +53,7 @@ func NewImageGenerationTool(client *genai.Client) (tool.Tool, error) {
 							return "", err
 						}
 						slog.Info("Image saved", "filename", filename)
-						fmt.Printf("\n🎨 The Artist has finished! View your sketchnote here: %s\n", filename)
+						observability.Report(ctx, fmt.Sprintf("\n%s The Artist has finished! View your sketchnote here: %s", "🎨", filename))
 						return fmt.Sprintf("Image successfully saved to %s", filename), nil
 					}
 				}
