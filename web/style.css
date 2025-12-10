@@ -1,0 +1,273 @@
+:root {
+  /* YouTube Light Mode Palette */
+  --bg-color: #F9F9F9;
+  --surface-color: #FFFFFF;
+  --text-primary: #0F0F0F;
+  --text-secondary: #606060;
+  --accent-color: #FF0000;
+  /* YouTube Red */
+  --border-color: rgba(0, 0, 0, 0.1);
+  --shadow-subtle: 0 1px 4px rgba(0, 0, 0, 0.05);
+
+  --font-family: 'Roboto', Arial, sans-serif;
+  --radius-pill: 24px;
+  --radius-card: 12px;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-family);
+  background-color: var(--bg-color);
+  color: var(--text-primary);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  overflow-x: hidden;
+}
+
+/* Material Icons size fix */
+.material-icons {
+  font-size: 24px;
+}
+
+/* Layout */
+.centered-layout {
+  width: 100%;
+  max-width: 900px;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2.5rem;
+  /* Increased gap for tidier spacing */
+}
+
+/* Header */
+.minimal-header {
+  margin-top: 3rem;
+  /* More breathing room at top */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.logo-icon {
+  color: var(--accent-color);
+  font-size: 2.5rem;
+  /* Slightly larger */
+}
+
+.logo-text {
+  font-size: 1.75rem;
+  font-weight: 700;
+  /* Bold title */
+  letter-spacing: -0.5px;
+  /* Tight tracking */
+  color: var(--text-primary);
+  margin: 0;
+}
+
+/* Input Section */
+.input-section {
+  width: 100%;
+  max-width: 640px;
+  /* Standard YouTube search width-ish */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.search-box {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  background-color: var(--surface-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-pill);
+  padding: 0.25rem 0.5rem 0.25rem 1.5rem;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  box-shadow: var(--shadow-subtle);
+  /* Lift it slightly */
+}
+
+.search-box:focus-within {
+  border-color: #1C62B9;
+  /* YouTube Blue-ish for focus frame */
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.1);
+  margin-left: 0;
+}
+
+#youtubeUrl {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-size: 1.1rem;
+  /* readable size */
+  padding: 0.8rem 0;
+  outline: none;
+  font-family: inherit;
+}
+
+#youtubeUrl::placeholder {
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+#generateBtn {
+  background: #F0F0F0;
+  /* Light gray button background */
+  border: 1px solid transparent;
+  color: var(--text-primary);
+  width: 48px;
+  /* Bigger target */
+  height: 48px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 0.5rem;
+  transition: all 0.2s;
+}
+
+#generateBtn:hover {
+  background-color: #E5E5E5;
+}
+
+#generateBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: transparent;
+}
+
+.status-text {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  min-height: 1.5rem;
+  font-weight: 500;
+}
+
+/* Player / Result Container */
+.player-container {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background-color: #000;
+  /* Keep player black for contrast */
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  /* Nicer drop shadow */
+}
+
+/* States */
+.player-state {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  top: 0;
+  left: 0;
+  transition: opacity 0.3s ease;
+}
+
+.hidden {
+  opacity: 0;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Idle State */
+.placeholder .large-icon {
+  font-size: 5rem;
+  color: #333;
+  /* Dark gray icon on black background */
+}
+
+/* Progress State */
+.loading-animation {
+  text-align: center;
+}
+
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  border-top-color: var(--accent-color);
+  animation: spin 1s ease-in-out infinite;
+  margin: 0 auto 1.5rem auto;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-text {
+  color: #DDD;
+  /* Light text since it's inside the black player */
+  font-size: 1.1rem;
+}
+
+/* Result State */
+#resultImage {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background-color: #000;
+}
+
+/* Result Actions Overlay */
+.result-actions {
+  position: absolute;
+  bottom: 24px;
+  right: 24px;
+  display: flex;
+  gap: 12px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.player-container:hover .result-actions {
+  opacity: 1;
+}
+
+.action-btn {
+  background: rgba(255, 255, 255, 0.9);
+  /* White buttons on the dark player */
+  border: none;
+  color: #0F0F0F;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+  transition: transform 0.2s, background 0.2s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.action-btn:hover {
+  background: #FFFFFF;
+  transform: scale(1.1);
+}

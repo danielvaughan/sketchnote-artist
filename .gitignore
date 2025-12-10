@@ -9,6 +9,7 @@
 /vendor/
 
 # Go compiled archives
+/server
 *.a
 
 # Linux
@@ -40,3 +41,26 @@
 
 # Visual Briefs
 visual-briefs/
+/PRIVATE_NOTES.md
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfvars
+*.tfvars.json
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+
+# Node.js
+node_modules/
+
+# Playwright
+playwright-report/
+test-results/

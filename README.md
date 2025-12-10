@@ -64,7 +64,27 @@ User -> https://www.youtube.com/watch?v=dQw4w9WgXcQ
 The agent will:
 1.  Process the video.
 2.  Print the progress of the agents.
-3.  Save the resulting image as `<Title>.png` in the current directory.
+3.  Save the resulting image as `generated_result_<timestamp>.png` (or based on the video title) in the current directory.
+
+## 🧪 Testing
+
+To run the automated end-to-end UI tests:
+
+1.  **Install Node.js dependencies:**
+    ```bash
+    npm install
+    ```
+
+2.  **Install Playwright browsers:**
+    ```bash
+    npx playwright install --with-deps
+    ```
+
+3.  **Run the tests:**
+    ```bash
+    npx playwright test
+    ```
+    This will automatically start the backend server and run the browser tests against it.
 
 ## 🖼️ Example Output
 
@@ -137,5 +157,52 @@ go test -tags=integration ./...
 ```
 
 ## 📄 License
+
+## ☁️ Deployment (Google Cloud Run)
+
+The infrastructure is managed via **Terraform**.
+
+### Prerequisites
+1.  [Install Terraform](https://developer.hashicorp.com/terraform/install).
+2.  [Install Google Cloud SDK](https://cloud.google.com/sdk/docs/install).
+3.  Authenticate with GCP:
+    ```bash
+    gcloud auth login
+    gcloud auth application-default login
+    ```
+
+### Terraform Setup
+
+1.  **Navigate to the terraform directory**:
+    ```bash
+    cd terraform
+    ```
+
+2.  **Initialize Terraform**:
+    ```bash
+    terraform init
+    ```
+
+3.  **Configure Variables**:
+    Copy the template:
+    ```bash
+    cp terraform.tfvars.template terraform.tfvars
+    ```
+    Edit `terraform.tfvars` and fill in your details:
+    *   `project_id`: Your GCP Project ID.
+    *   `domain`: The domain for your load balancer (e.g., `app.example.com`).
+    *   `allowed_user_emails`: List of emails allowed to access the app via IAP.
+    *   `iap_client_id` & `iap_client_secret`: From GCP Console -> APIs & Services -> Credentials -> OAuth 2.0 Client IDs.
+    *   `google_api_key`: Your Gemini API Key.
+
+4.  **Deploy**:
+    ```bash
+    terraform apply
+    ```
+    Confirm the plan by typing `yes`.
+
+5.  **Post-Deployment**:
+    *   Update your DNS A record to point to the `load_balancer_ip` output by Terraform.
+    *   Add the callback URL to your OAuth Client ID in GCP Console: `https://iap.googleapis.com/v1/oauth/clientIds/YOUR_CLIENT_ID:handleRedirect`.
 
 [MIT License](LICENSE)

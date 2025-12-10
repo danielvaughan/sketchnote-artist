@@ -17,6 +17,7 @@ import (
 	"google.golang.org/adk/tool"
 	"google.golang.org/genai"
 
+	"github.com/danielvaughan/sketchnote-artist/internal/observability"
 	"github.com/danielvaughan/sketchnote-artist/internal/prompts"
 	"github.com/danielvaughan/sketchnote-artist/internal/tools"
 )
@@ -39,7 +40,7 @@ func NewCurator(ctx context.Context, apiKey string) (agent.Agent, error) {
 		return nil, fmt.Errorf("failed to create YouTube summarizer tool: %w", err)
 	}
 
-	fileTool, err := tools.NewFileSaver()
+	fileTool, err := tools.NewFileSaver("visual-briefs")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create file saver tool: %w", err)
 	}
@@ -79,8 +80,10 @@ func NewCurator(ctx context.Context, apiKey string) (agent.Agent, error) {
 				}
 			}
 
+			// Report progress via context
+			observability.Report(ctx, fmt.Sprintf("%s The Curator is analyzing the video to create a visual brief: %s", CuratorEmoji, input))
+
 			// Inject URL into instruction
-			fmt.Printf("\n%s The Curator is analyzing the video to create a visual brief: %s\n", CuratorEmoji, input)
 			instruction := strings.ReplaceAll(prompts.CuratorInstruction, "{YouTubeURL}", input)
 
 			// Create dynamic agent
@@ -105,7 +108,8 @@ func NewCurator(ctx context.Context, apiKey string) (agent.Agent, error) {
 						return
 					}
 				}
-				fmt.Printf("\n%s The Curator has completed the visual brief in %s\n", CuratorEmoji, time.Since(startTime).Round(time.Second))
+				// Report completion
+				observability.Report(ctx, fmt.Sprintf("%s The Curator has completed the visual brief in %s", CuratorEmoji, time.Since(startTime).Round(time.Second)))
 			}
 		},
 	})

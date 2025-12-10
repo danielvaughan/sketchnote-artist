@@ -1,0 +1,13 @@
+{
+  "name": "sketchnote-artist",
+  "version": "1.0.0",
+  "description": "Sketchnote Artist Agent",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  }
+}

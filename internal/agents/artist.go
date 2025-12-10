@@ -13,6 +13,7 @@ import (
 	"google.golang.org/adk/tool"
 	"google.golang.org/genai"
 
+	"github.com/danielvaughan/sketchnote-artist/internal/observability"
 	"github.com/danielvaughan/sketchnote-artist/internal/prompts"
 	"github.com/danielvaughan/sketchnote-artist/internal/tools"
 )
@@ -37,7 +38,7 @@ func NewArtist(ctx context.Context, apiKey string) (agent.Agent, error) {
 		return nil, fmt.Errorf("failed to create artist model: %w", err)
 	}
 
-	imageTool, err := tools.NewImageGenerationTool(client)
+	imageTool, err := tools.NewImageGenerationTool(client, "sketchnotes")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create image generation tool: %w", err)
 	}
@@ -65,7 +66,7 @@ func NewArtist(ctx context.Context, apiKey string) (agent.Agent, error) {
 				return func(yield func(*session.Event, error) bool) {}
 			}
 
-			fmt.Printf("\n%s The Artist is reading the visual brief...\n", ArtistEmoji)
+			observability.Report(ctx, fmt.Sprintf("%s The Artist is reading the visual brief...", ArtistEmoji))
 
 			return func(yield func(*session.Event, error) bool) {
 				for event, err := range innerAgent.Run(ctx) {
