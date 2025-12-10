@@ -158,4 +158,51 @@ go test -tags=integration ./...
 
 ## 📄 License
 
+## ☁️ Deployment (Google Cloud Run)
+
+The infrastructure is managed via **Terraform**.
+
+### Prerequisites
+1.  [Install Terraform](https://developer.hashicorp.com/terraform/install).
+2.  [Install Google Cloud SDK](https://cloud.google.com/sdk/docs/install).
+3.  Authenticate with GCP:
+    ```bash
+    gcloud auth login
+    gcloud auth application-default login
+    ```
+
+### Terraform Setup
+
+1.  **Navigate to the terraform directory**:
+    ```bash
+    cd terraform
+    ```
+
+2.  **Initialize Terraform**:
+    ```bash
+    terraform init
+    ```
+
+3.  **Configure Variables**:
+    Copy the template:
+    ```bash
+    cp terraform.tfvars.template terraform.tfvars
+    ```
+    Edit `terraform.tfvars` and fill in your details:
+    *   `project_id`: Your GCP Project ID.
+    *   `domain`: The domain for your load balancer (e.g., `app.example.com`).
+    *   `allowed_user_emails`: List of emails allowed to access the app via IAP.
+    *   `iap_client_id` & `iap_client_secret`: From GCP Console -> APIs & Services -> Credentials -> OAuth 2.0 Client IDs.
+    *   `google_api_key`: Your Gemini API Key.
+
+4.  **Deploy**:
+    ```bash
+    terraform apply
+    ```
+    Confirm the plan by typing `yes`.
+
+5.  **Post-Deployment**:
+    *   Update your DNS A record to point to the `load_balancer_ip` output by Terraform.
+    *   Add the callback URL to your OAuth Client ID in GCP Console: `https://iap.googleapis.com/v1/oauth/clientIds/YOUR_CLIENT_ID:handleRedirect`.
+
 [MIT License](LICENSE)

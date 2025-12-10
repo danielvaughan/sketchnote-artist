@@ -39,6 +39,8 @@ func main() {
 		os.Exit(1)
 	}
 
+	slog.Info("GOOGLE_API_KEY loaded successfully", "length", len(apiKey))
+
 	// Create the Sketchnote Agent
 	agentInstance, err := app.NewSketchnoteAgent(ctx, app.Config{
 		APIKey: apiKey,
@@ -47,6 +49,7 @@ func main() {
 		slog.Error("Failed to create agent", "error", err)
 		os.Exit(1)
 	}
+	slog.Info("Agent created successfully")
 
 	// Configure the launcher with in-memory services
 	config := &launcher.Config{

@@ -1,0 +1,14 @@
+project_id         = "REPLACE_WITH_YOUR_PROJECT_ID"
+region             = "us-central1"
+domain             = "REPLACE_WITH_YOUR_DOMAIN" # e.g., app.example.com
+allowed_user_emails = ["REPLACE_WITH_USER_EMAIL"] # e.g., ["user@gmail.com", "another@example.com"]
+
+# IAP Credentials (from OAuth Client ID in GCP Console)
+iap_client_id     = "REPLACE_WITH_IAP_CLIENT_ID"
+iap_client_secret = "REPLACE_WITH_IAP_CLIENT_SECRET"
+
+# Gemini API Key
+google_api_key = "REPLACE_WITH_GOOGLE_API_KEY"
+
+# Optional
+# image_tag = "v1"
