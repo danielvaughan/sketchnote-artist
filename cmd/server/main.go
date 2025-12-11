@@ -6,6 +6,8 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"google.golang.org/adk/agent"
 	"google.golang.org/adk/artifact"
@@ -84,15 +86,15 @@ func main() {
 		}
 
 		// Serve generated images
-		if len(r.URL.Path) > 8 && r.URL.Path[:8] == "/images/" {
-			// Serve from current directory, strip /images/ prefix
-			filename := r.URL.Path[8:]
-			// Basic security: prevent directory traversal
-			if filename == "" || filename == "." || filename == ".." {
+		if strings.HasPrefix(r.URL.Path, "/images/") {
+			// Security: Prevent directory traversal.
+			filename := strings.TrimPrefix(r.URL.Path, "/images/")
+			cleanPath := filepath.Join("sketchnotes", filename)
+			if !strings.HasPrefix(cleanPath, "sketchnotes/") {
 				http.NotFound(w, r)
 				return
 			}
-			http.ServeFile(w, r, "sketchnotes/"+filename)
+			http.ServeFile(w, r, cleanPath)
 			return
 		}
 
