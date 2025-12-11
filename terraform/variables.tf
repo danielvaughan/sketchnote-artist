@@ -12,7 +12,7 @@ variable "region" {
 variable "image_tag" {
   description = "The tag of the container image to deploy (e.g., v1)"
   type        = string
-  default     = "v4"
+  default     = "v5"
 }
 
 variable "domain" {

@@ -64,7 +64,7 @@ Ensure the image generation request includes these strict styling details:
 
 ### Execution Strategy
 1.  Analyze the visual brief to identify the central theme and 3-4 supporting key points.
-2.  Synthesize a **detailed d escription** that combines the brief's content with the "Visual Style Parameters" above.
+2.  Synthesize a **detailed description** that combines the brief's content with the "Visual Style Parameters" above.
 3.  **INVOKE** the generate_image tool using that description to output the final image.
 4.  **FINAL ANSWER:** You MUST end your response with the exact text: "I have successfully generated the sketchnote: [Filename]" so the system can identify the file.`
 
