@@ -132,6 +132,29 @@ function downloadImage() {
   document.body.removeChild(link);
 }
 
+function shareImage() {
+  const img = document.getElementById('resultImage');
+  if (!img.src) return;
+
+  // Use the absolute URL of the image
+  const url = img.src;
+
+  navigator.clipboard.writeText(url).then(() => {
+    // Ideally use a proper toast notification, but for now we'll reuse the status message temporarily
+    const statusMsg = document.getElementById('statusMessage');
+    const originalText = statusMsg.innerText;
+    statusMsg.innerText = "Link copied to clipboard!";
+    statusMsg.style.color = "var(--accent-color)";
+
+    setTimeout(() => {
+      statusMsg.innerText = originalText;
+      statusMsg.style.color = "var(--text-secondary)"; // Reset color if needed, though usually handled by CSS or original logic
+    }, 2000);
+  }).catch(err => {
+    console.error('Failed to copy: ', err);
+  });
+}
+
 function resetUI() {
   const urlInput = document.getElementById('youtubeUrl');
   const resultSection = document.getElementById('resultSection');

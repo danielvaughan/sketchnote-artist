@@ -31,8 +31,8 @@ resource "google_cloud_run_v2_service" "default" {
 }
 
 resource "google_service_account" "run_sa" {
-  account_id   = "sketchnote-run-sa"
-  display_name = "Cloud Run Service Account"
+  account_id   = "sketchnote-run-sa-${local.env}"
+  display_name = "Cloud Run Service Account - ${local.env}"
 }
 
 resource "google_storage_bucket_iam_member" "run_sa_briefs_creator" {

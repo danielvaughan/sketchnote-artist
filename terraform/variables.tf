@@ -39,17 +39,7 @@ variable "google_api_key" {
   sensitive   = true
 }
 
-variable "github_owner" {
-  description = "The owner of the GitHub repository"
-  type        = string
-  default     = "danielvaughan"
-}
 
-variable "github_repo_name" {
-  description = "The name of the GitHub repository"
-  type        = string
-  default     = "sketchnote-artist"
-}
 
 
 variable "github_repository_id" {

@@ -114,7 +114,7 @@ func main() {
 			}
 
 			// Stream content from storage (local or GCS)
-			reader, err := store.Get(r.Context(), "sketchnotes", filename)
+			reader, err := store.Get(r.Context(), "images", filename)
 			if err != nil {
 				// If error is file not found, return 404
 				if os.IsNotExist(err) {
