@@ -89,7 +89,21 @@ async function generateSketchnote() {
 
     // 5. Show Result
     // Add small delay to ensure FS write? (Usually immediate if response came back)
-    resultImage.src = `${API_BASE}/images/${filename}`;
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    const imagePath = `${API_BASE}/images/${filename}`;
+
+    // Validate image fetch before showing
+    try {
+      const imgCheck = await fetch(imagePath);
+      if (!imgCheck.ok) {
+        throw new Error(`Failed to fetch image: ${filename} (Status: ${imgCheck.status})`);
+      }
+    } catch (e) {
+      throw new Error(`Failed to load image '${filename}': ${e.message}`);
+    }
+
+    resultImage.src = imagePath;
 
     progressSection.classList.add('hidden');
     resultSection.classList.remove('hidden');
