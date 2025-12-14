@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"io"
 	"log"
 	"log/slog"
 	"net/http"
@@ -17,6 +18,7 @@ import (
 	"github.com/joho/godotenv"
 
 	"github.com/danielvaughan/sketchnote-artist/internal/app"
+	"github.com/danielvaughan/sketchnote-artist/internal/storage"
 )
 
 func main() {
@@ -41,9 +43,27 @@ func main() {
 
 	slog.Info("GOOGLE_API_KEY loaded successfully", "length", len(apiKey))
 
+	// Initialize Storage
+	var store storage.Store
+	if os.Getenv("DEPLOYMENT_MODE") == "cloud_run" {
+		briefsBucket := os.Getenv("GCS_BUCKET_BRIEFS")
+		imagesBucket := os.Getenv("GCS_BUCKET_IMAGES")
+		slog.Info("Initializing Cloud Storage", "briefsBucket", briefsBucket, "imagesBucket", imagesBucket)
+		gcsStore, err := storage.NewGCSStore(ctx, briefsBucket, imagesBucket)
+		if err != nil {
+			slog.Error("Failed to initialize GCS store", "error", err)
+			os.Exit(1)
+		}
+		store = gcsStore
+	} else {
+		slog.Info("Initializing Local Disk Storage")
+		store = &storage.DiskStore{}
+	}
+
 	// Create the Sketchnote Agent
 	agentInstance, err := app.NewSketchnoteAgent(ctx, app.Config{
 		APIKey: apiKey,
+		Store:  store,
 	})
 	if err != nil {
 		slog.Error("Failed to create agent", "error", err)
@@ -92,7 +112,27 @@ func main() {
 				http.NotFound(w, r)
 				return
 			}
-			http.ServeFile(w, r, "sketchnotes/"+filename)
+
+			// Stream content from storage (local or GCS)
+			reader, err := store.Get(r.Context(), "sketchnotes", filename)
+			if err != nil {
+				// If error is file not found, return 404
+				if os.IsNotExist(err) {
+					http.NotFound(w, r)
+					return
+				}
+				slog.Error("Failed to retrieve image", "filename", filename, "error", err)
+				http.Error(w, "Failed to retrieve image", http.StatusInternalServerError)
+				return
+			}
+			defer reader.Close()
+
+			// Basic Content-Type sniffing or default to png
+			// Since we know these are generated as PNGs usually:
+			w.Header().Set("Content-Type", "image/png")
+			if _, err := io.Copy(w, reader); err != nil {
+				slog.Error("Failed to stream image content", "error", err)
+			}
 			return
 		}
 

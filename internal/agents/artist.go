@@ -15,13 +15,14 @@ import (
 
 	"github.com/danielvaughan/sketchnote-artist/internal/observability"
 	"github.com/danielvaughan/sketchnote-artist/internal/prompts"
+	"github.com/danielvaughan/sketchnote-artist/internal/storage"
 	"github.com/danielvaughan/sketchnote-artist/internal/tools"
 )
 
 const ArtistEmoji = "🎨"
 
 // NewArtist creates the artist agent.
-func NewArtist(ctx context.Context, apiKey string) (agent.Agent, error) {
+func NewArtist(ctx context.Context, apiKey string, store storage.Store) (agent.Agent, error) {
 	// Initialize genai client for the tool
 	client, err := genai.NewClient(ctx, &genai.ClientConfig{
 		APIKey: apiKey,
@@ -38,7 +39,7 @@ func NewArtist(ctx context.Context, apiKey string) (agent.Agent, error) {
 		return nil, fmt.Errorf("failed to create artist model: %w", err)
 	}
 
-	imageTool, err := tools.NewImageGenerationTool(client, "sketchnotes")
+	imageTool, err := tools.NewImageGenerationTool(client, store, "sketchnotes")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create image generation tool: %w", err)
 	}

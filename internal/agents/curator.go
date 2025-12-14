@@ -19,13 +19,14 @@ import (
 
 	"github.com/danielvaughan/sketchnote-artist/internal/observability"
 	"github.com/danielvaughan/sketchnote-artist/internal/prompts"
+	"github.com/danielvaughan/sketchnote-artist/internal/storage"
 	"github.com/danielvaughan/sketchnote-artist/internal/tools"
 )
 
 const CuratorEmoji = "🧐"
 
 // NewCurator creates the curator agent.
-func NewCurator(ctx context.Context, apiKey string) (agent.Agent, error) {
+func NewCurator(ctx context.Context, apiKey string, store storage.Store) (agent.Agent, error) {
 	// Initialize the Gemini model for the Curator agent
 	model, err := gemini.NewModel(ctx, "gemini-3-pro-preview", &genai.ClientConfig{
 		APIKey: apiKey,
@@ -40,7 +41,7 @@ func NewCurator(ctx context.Context, apiKey string) (agent.Agent, error) {
 		return nil, fmt.Errorf("failed to create YouTube summarizer tool: %w", err)
 	}
 
-	fileTool, err := tools.NewFileSaver("visual-briefs")
+	fileTool, err := tools.NewFileSaver(store, "visual-briefs")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create file saver tool: %w", err)
 	}
