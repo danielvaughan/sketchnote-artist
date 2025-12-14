@@ -70,4 +70,4 @@ Ensure the image generation request includes these strict styling details:
 
 const YouTubeSummarizerInstruction = `Analyze the video and provide a structured response with the following sections:
 1. Title: The title of the YouTube video.
-2. Summary: A comprehensive summary highlighting key points, main arguments, and important conclusions.`
+2. Summary: A comprehensive summary highlighting key points, main arguments, and important conclusions. Ensure the summary accurately reflects the speaker's tone and intent to avoid misrepresentation.`
