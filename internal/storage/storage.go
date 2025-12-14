@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -24,6 +25,9 @@ type Store interface {
 
 	// Exists checks if a file exists in the storage.
 	Exists(ctx context.Context, folder, filename string) (bool, error)
+
+	// Get returns a reader for the file content.
+	Get(ctx context.Context, folder, filename string) (io.ReadCloser, error)
 }
 
 // DiskStore implements Store for local file system.
@@ -57,6 +61,11 @@ func (s *DiskStore) Exists(ctx context.Context, folder, filename string) (bool, 
 		return false, nil
 	}
 	return false, err
+}
+
+func (s *DiskStore) Get(ctx context.Context, folder, filename string) (io.ReadCloser, error) {
+	fullPath := filepath.Join(folder, filename)
+	return os.Open(fullPath)
 }
 
 // GCSStore implements Store for Google Cloud Storage.
@@ -127,4 +136,12 @@ func (s *GCSStore) Exists(ctx context.Context, folder, filename string) (bool, e
 		return false, err
 	}
 	return true, nil
+}
+
+func (s *GCSStore) Get(ctx context.Context, folder, filename string) (io.ReadCloser, error) {
+	bucketName, err := s.getBucketName(folder)
+	if err != nil {
+		return nil, err
+	}
+	return s.Client.Bucket(bucketName).Object(filename).NewReader(ctx)
 }

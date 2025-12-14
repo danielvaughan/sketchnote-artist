@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"io"
 	"log"
 	"log/slog"
 	"net/http"
@@ -112,17 +113,26 @@ func main() {
 				return
 			}
 
-			// Check if we are using GCS
-			if _, ok := store.(*storage.GCSStore); ok {
-				publicURL := store.GetPublicURL("sketchnotes", filename)
-				if publicURL != "" {
-					http.Redirect(w, r, publicURL, http.StatusFound)
+			// Stream content from storage (local or GCS)
+			reader, err := store.Get(r.Context(), "sketchnotes", filename)
+			if err != nil {
+				// If error is file not found, return 404
+				if os.IsNotExist(err) {
+					http.NotFound(w, r)
 					return
 				}
+				slog.Error("Failed to retrieve image", "filename", filename, "error", err)
+				http.Error(w, "Failed to retrieve image", http.StatusInternalServerError)
+				return
 			}
+			defer reader.Close()
 
-			// Local fallback
-			http.ServeFile(w, r, "sketchnotes/"+filename)
+			// Basic Content-Type sniffing or default to png
+			// Since we know these are generated as PNGs usually:
+			w.Header().Set("Content-Type", "image/png")
+			if _, err := io.Copy(w, reader); err != nil {
+				slog.Error("Failed to stream image content", "error", err)
+			}
 			return
 		}
 
