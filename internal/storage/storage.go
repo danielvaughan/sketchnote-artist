@@ -43,8 +43,8 @@ func (s *DiskStore) Save(ctx context.Context, folder, filename string, data []by
 }
 
 func (s *DiskStore) GetPublicURL(folder, filename string) string {
-	// For local dev, we assume the server maps /images/ to sketchnotes/
-	if folder == "sketchnotes" {
+	// For local dev, we assume the server maps /images/ to sketchnotes/ or images/
+	if folder == "sketchnotes" || folder == "images" {
 		return fmt.Sprintf("/images/%s", filename)
 	}
 	// No public URL for visual briefs locally by default in this requirements scope
@@ -91,7 +91,7 @@ func (s *GCSStore) getBucketName(folder string) (string, error) {
 	switch folder {
 	case "visual-briefs":
 		return s.BriefsBucket, nil
-	case "sketchnotes":
+	case "sketchnotes", "images":
 		return s.ImagesBucket, nil
 	default:
 		return "", fmt.Errorf("unknown storage folder type: %s", folder)
