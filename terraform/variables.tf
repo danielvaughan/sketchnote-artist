@@ -32,13 +32,35 @@ variable "iap_client_secret" {
   sensitive   = true
 }
 
-variable "allowed_user_emails" {
-  description = "A list of email addresses of users to allow access via IAP"
-  type        = list(string)
-}
 
 variable "google_api_key" {
   description = "The Google API Key for Gemini"
   type        = string
   sensitive   = true
 }
+
+variable "github_owner" {
+  description = "The owner of the GitHub repository"
+  type        = string
+  default     = "danielvaughan"
+}
+
+variable "github_repo_name" {
+  description = "The name of the GitHub repository"
+  type        = string
+  default     = "sketchnote-artist"
+}
+
+
+variable "github_repository_id" {
+  description = "The Cloud Build Repository ID (usually owner-repo)"
+  type        = string
+  default     = "danielvaughan-sketchnote-artist"
+}
+
+variable "github_connection_name" {
+  description = "The name of the Cloud Build 2nd Gen Repository Connection"
+  type        = string
+  default     = "sketchnote-artist"
+}
+

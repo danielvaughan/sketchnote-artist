@@ -65,6 +65,6 @@ resource "google_iap_web_backend_service_iam_binding" "binding" {
   web_backend_service = google_compute_backend_service.default.name
   role                = "roles/iap.httpsResourceAccessor"
   members = [
-    for email in var.allowed_user_emails : "user:${email}"
+    for email in jsondecode(file("${path.module}/allowed_users.json")) : "user:${email}"
   ]
 }

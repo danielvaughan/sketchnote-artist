@@ -23,9 +23,14 @@ resource "google_cloudbuild_trigger" "push_to_main" {
 
   include_build_logs = "INCLUDE_BUILD_LOGS_WITH_STATUS"
 
-  service_account = "projects/${var.project_id}/serviceAccounts/${data.google_project.project.number}@cloudbuild.gserviceaccount.com"
+  service_account = google_service_account.cloudbuild_sa.id
 
   depends_on = [google_project_service.cloudbuild_api]
+}
+
+resource "google_service_account" "cloudbuild_sa" {
+  account_id   = "sketchnote-builder"
+  display_name = "Cloud Build Service Account for Sketchnote Artist"
 }
 
 data "google_project" "project" {}
@@ -33,25 +38,25 @@ data "google_project" "project" {}
 resource "google_project_iam_member" "cloudbuild_run_admin" {
   project = var.project_id
   role    = "roles/run.admin"
-  member  = "serviceAccount:${data.google_project.project.number}@cloudbuild.gserviceaccount.com"
-
-  depends_on = [google_project_service.cloudbuild_api]
+  member  = "serviceAccount:${google_service_account.cloudbuild_sa.email}"
 }
 
 resource "google_project_iam_member" "cloudbuild_sa_user" {
   project = var.project_id
   role    = "roles/iam.serviceAccountUser"
-  member  = "serviceAccount:${data.google_project.project.number}@cloudbuild.gserviceaccount.com"
-
-  depends_on = [google_project_service.cloudbuild_api]
+  member  = "serviceAccount:${google_service_account.cloudbuild_sa.email}"
 }
 
 resource "google_project_iam_member" "cloudbuild_artifact_registry_writer" {
   project = var.project_id
   role    = "roles/artifactregistry.writer"
-  member  = "serviceAccount:${data.google_project.project.number}@cloudbuild.gserviceaccount.com"
+  member  = "serviceAccount:${google_service_account.cloudbuild_sa.email}"
+}
 
-  depends_on = [google_project_service.cloudbuild_api]
+resource "google_project_iam_member" "cloudbuild_logging_writer" {
+  project = var.project_id
+  role    = "roles/logging.logWriter"
+  member  = "serviceAccount:${google_service_account.cloudbuild_sa.email}"
 }
 
 
