@@ -1,0 +1,26 @@
+steps:
+  # Build the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', '$_REGION-docker.pkg.dev/$PROJECT_ID/sketchnote-repo/sketchnote-artist:$COMMIT_SHA', '.']
+
+  # Push the container image to Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', '$_REGION-docker.pkg.dev/$PROJECT_ID/sketchnote-repo/sketchnote-artist:$COMMIT_SHA']
+
+  # Deploy container image to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - 'sketchnote-artist'
+      - '--image'
+      - '$_REGION-docker.pkg.dev/$PROJECT_ID/sketchnote-repo/sketchnote-artist:$COMMIT_SHA'
+      - '--region'
+      - '$_REGION'
+
+images:
+  - '$_REGION-docker.pkg.dev/$PROJECT_ID/sketchnote-repo/sketchnote-artist:$COMMIT_SHA'
+
+substitutions:
+  _REGION: us-central1
