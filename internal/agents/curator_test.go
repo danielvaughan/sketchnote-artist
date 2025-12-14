@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/danielvaughan/sketchnote-artist/internal/storage"
 	"google.golang.org/adk/agent"
 	"google.golang.org/adk/session"
 	"google.golang.org/genai"
@@ -110,7 +111,7 @@ func TestCurator_Run_GracefulFailure(t *testing.T) {
 	apiKey := "dummy_key"
 
 	// Create agent
-	cAgent, err := NewCurator(ctx, apiKey)
+	cAgent, err := NewCurator(ctx, apiKey, &storage.DiskStore{})
 	if err != nil {
 		t.Fatalf("Failed to create Curator: %v", err)
 	}

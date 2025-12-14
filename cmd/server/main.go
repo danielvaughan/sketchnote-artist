@@ -17,6 +17,7 @@ import (
 	"github.com/joho/godotenv"
 
 	"github.com/danielvaughan/sketchnote-artist/internal/app"
+	"github.com/danielvaughan/sketchnote-artist/internal/storage"
 )
 
 func main() {
@@ -41,9 +42,27 @@ func main() {
 
 	slog.Info("GOOGLE_API_KEY loaded successfully", "length", len(apiKey))
 
+	// Initialize Storage
+	var store storage.Store
+	if os.Getenv("DEPLOYMENT_MODE") == "cloud_run" {
+		briefsBucket := os.Getenv("GCS_BUCKET_BRIEFS")
+		imagesBucket := os.Getenv("GCS_BUCKET_IMAGES")
+		slog.Info("Initializing Cloud Storage", "briefsBucket", briefsBucket, "imagesBucket", imagesBucket)
+		gcsStore, err := storage.NewGCSStore(ctx, briefsBucket, imagesBucket)
+		if err != nil {
+			slog.Error("Failed to initialize GCS store", "error", err)
+			os.Exit(1)
+		}
+		store = gcsStore
+	} else {
+		slog.Info("Initializing Local Disk Storage")
+		store = &storage.DiskStore{}
+	}
+
 	// Create the Sketchnote Agent
 	agentInstance, err := app.NewSketchnoteAgent(ctx, app.Config{
 		APIKey: apiKey,
+		Store:  store,
 	})
 	if err != nil {
 		slog.Error("Failed to create agent", "error", err)
@@ -92,6 +111,17 @@ func main() {
 				http.NotFound(w, r)
 				return
 			}
+
+			// Check if we are using GCS
+			if _, ok := store.(*storage.GCSStore); ok {
+				publicURL := store.GetPublicURL("sketchnotes", filename)
+				if publicURL != "" {
+					http.Redirect(w, r, publicURL, http.StatusFound)
+					return
+				}
+			}
+
+			// Local fallback
 			http.ServeFile(w, r, "sketchnotes/"+filename)
 			return
 		}

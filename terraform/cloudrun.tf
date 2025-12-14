@@ -1,11 +1,11 @@
 resource "google_cloud_run_v2_service" "default" {
-  name     = "sketchnote-artist"
+  name     = local.service_name
   location = var.region
-  ingress  = "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"
+  ingress  = local.is_prod ? "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER" : "INGRESS_TRAFFIC_ALL"
 
   template {
     containers {
-      image = "${var.region}-docker.pkg.dev/${var.project_id}/sketchnote-repo/sketchnote-artist:${var.image_tag}"
+      image = "${var.region}-docker.pkg.dev/${var.project_id}/sketchnote-repo-${local.env}/sketchnote-artist:${var.image_tag}"
       ports {
         container_port = 8080
       }
@@ -13,8 +13,38 @@ resource "google_cloud_run_v2_service" "default" {
         name  = "GOOGLE_API_KEY"
         value = var.google_api_key
       }
+      env {
+        name  = "DEPLOYMENT_MODE"
+        value = "cloud_run"
+      }
+      env {
+        name  = "GCS_BUCKET_BRIEFS"
+        value = google_storage_bucket.visual_briefs.name
+      }
+      env {
+        name  = "GCS_BUCKET_IMAGES"
+        value = google_storage_bucket.images.name
+      }
     }
+    service_account = google_service_account.run_sa.email
   }
+}
+
+resource "google_service_account" "run_sa" {
+  account_id   = "sketchnote-run-sa"
+  display_name = "Cloud Run Service Account"
+}
+
+resource "google_storage_bucket_iam_member" "run_sa_briefs_creator" {
+  bucket = google_storage_bucket.visual_briefs.name
+  role   = "roles/storage.objectCreator"
+  member = "serviceAccount:${google_service_account.run_sa.email}"
+}
+
+resource "google_storage_bucket_iam_member" "run_sa_images_creator" {
+  bucket = google_storage_bucket.images.name
+  role   = "roles/storage.objectCreator"
+  member = "serviceAccount:${google_service_account.run_sa.email}"
 }
 
 

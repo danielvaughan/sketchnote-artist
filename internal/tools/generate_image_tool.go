@@ -3,19 +3,18 @@ package tools
 import (
 	"fmt"
 	"log/slog"
-	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/danielvaughan/sketchnote-artist/internal/observability"
+	"github.com/danielvaughan/sketchnote-artist/internal/storage"
 	"google.golang.org/adk/tool"
 	"google.golang.org/adk/tool/functiontool"
 	"google.golang.org/genai"
 )
 
 // NewImageGenerationTool creates a new tool for generating images.
-func NewImageGenerationTool(client *genai.Client, outputDir string) (tool.Tool, error) {
+func NewImageGenerationTool(client *genai.Client, store storage.Store, folder string) (tool.Tool, error) {
 	return functiontool.New(
 		functiontool.Config{
 			Name:        "generate_image",
@@ -30,12 +29,6 @@ func NewImageGenerationTool(client *genai.Client, outputDir string) (tool.Tool, 
 			observability.Report(ctx, fmt.Sprintf("\n%s The Artist is sketching...", "🎨"))
 			slog.Info("Generating image", "filename", filename)
 
-			// Ensure output directory exists
-			if err := os.MkdirAll(outputDir, 0755); err != nil {
-				slog.Error("Failed to create output directory", "error", err)
-				return "", fmt.Errorf("failed to create output directory: %w", err)
-			}
-
 			// Call Imagen 3 model
 			resp, err := client.Models.GenerateContent(ctx, "gemini-3-pro-image-preview", genai.Text(prompt), nil)
 			if err != nil {
@@ -43,37 +36,35 @@ func NewImageGenerationTool(client *genai.Client, outputDir string) (tool.Tool, 
 				return "", fmt.Errorf("generation failed: %w", err)
 			}
 
-			// Helper to get full path and check existence
-			getFullPath := func(fname string) string {
-				return filepath.Join(outputDir, fname)
-			}
-
 			// Save the image bytes to a file
 			for _, candidate := range resp.Candidates {
 				for _, part := range candidate.Content.Parts {
 					if part.InlineData != nil {
-						fullPath := getFullPath(filename)
 						// Ensure filename is unique if it already exists
-						if _, err := os.Stat(fullPath); err == nil {
+						exists, err := store.Exists(ctx, folder, filename)
+						if err == nil && exists {
 							// If file exists, append timestamp before extension
 							ext := ".png"
-							name := strings.TrimSuffix(filename, ext)
-							filename = fmt.Sprintf("%s_%d%s", name, time.Now().UnixNano(), ext)
-							fullPath = getFullPath(filename)
+							if strings.Contains(filename, ".") {
+								// Simple extension check/split might be safer
+								// For now assume .png as per previous code context or just simple append
+								parts := strings.Split(filename, ".")
+								if len(parts) > 1 {
+									ext = "." + parts[len(parts)-1]
+									name := strings.TrimSuffix(filename, ext)
+									filename = fmt.Sprintf("%s_%d%s", name, time.Now().UnixNano(), ext)
+								} else {
+									filename = fmt.Sprintf("%s_%d", filename, time.Now().UnixNano())
+								}
+							}
 						}
 
-						if err := os.WriteFile(fullPath, part.InlineData.Data, 0644); err != nil {
+						if err := store.Save(ctx, folder, filename, part.InlineData.Data); err != nil {
 							slog.Error("Failed to save image", "error", err)
 							return "", err
 						}
-						slog.Info("Image saved", "filename", fullPath)
-						// Return relative path (filename only) or full path? Returning full relative path for clarity.
-						// Wait, the agent might get confused if we change the return value format too much.
-						// The web frontend expects /images/filename.
-						// If we return just filename, the UI code works.
-						// If we return visual-briefs/filename, existing patterns might break.
-						// Let's stick to returning "Successfully saved to [filename]" where filename handles the user/agent expectation.
-						// Actually, better to return just the filename so the agent knows what it saved as.
+						slog.Info("Image saved", "folder", folder, "filename", filename)
+
 						observability.Report(ctx, fmt.Sprintf("\n%s The Artist has finished! View your sketchnote here: %s", "🎨", filename))
 						return fmt.Sprintf("Image successfully saved to %s", filename), nil
 					}

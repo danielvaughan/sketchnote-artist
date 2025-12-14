@@ -4,21 +4,23 @@ resource "google_project_service" "cloudbuild_api" {
 }
 
 resource "google_cloudbuild_trigger" "push_to_main" {
-  name        = "push-to-main"
-  description = "Triggered by push to main branch"
+  name        = "deploy-${local.env}"
+  description = "Triggered by push to ${local.env} branch"
   location    = var.region
 
   repository_event_config {
     repository = "projects/${var.project_id}/locations/${var.region}/connections/${var.github_connection_name}/repositories/${var.github_repository_id}"
     push {
-      branch = "^main$"
+      branch = local.branch_pattern
     }
   }
 
   filename = "cloudbuild.yaml"
 
   substitutions = {
-    _REGION = var.region
+    _REGION       = var.region
+    _SERVICE_NAME = local.service_name
+    _REPO_NAME    = "sketchnote-repo-${local.env}"
   }
 
   include_build_logs = "INCLUDE_BUILD_LOGS_WITH_STATUS"
@@ -29,8 +31,8 @@ resource "google_cloudbuild_trigger" "push_to_main" {
 }
 
 resource "google_service_account" "cloudbuild_sa" {
-  account_id   = "sketchnote-builder"
-  display_name = "Cloud Build Service Account for Sketchnote Artist"
+  account_id   = "sketchnote-builder-${local.env}"
+  display_name = "Cloud Build Service Account for Sketchnote Artist (${local.env})"
 }
 
 data "google_project" "project" {}
