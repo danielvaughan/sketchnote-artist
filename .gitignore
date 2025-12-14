@@ -65,6 +65,6 @@ node_modules/
 playwright-report/
 test-results/
 /terraform/allowed_users.json
-!/private/uk-legal.md
 
-!/private/us-legal.md
+# Private files and directories
+/private/
