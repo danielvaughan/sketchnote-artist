@@ -41,7 +41,7 @@
 
 # Visual Briefs
 visual-briefs/
-/PRIVATE_NOTES.md
+/private/PRIVATE_NOTES.md
 
 # Terraform
 .terraform/
