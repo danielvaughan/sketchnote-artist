@@ -1,3 +1,4 @@
+// Package tools contains the specific tools used by the agents (Image generation, YouTube, etc.).
 package tools
 
 import (

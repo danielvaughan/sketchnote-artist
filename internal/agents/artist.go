@@ -1,3 +1,4 @@
+// Package agents contains the implementation of the Curator and Artist agents.
 package agents
 
 import (
@@ -19,6 +20,7 @@ import (
 	"github.com/danielvaughan/sketchnote-artist/internal/tools"
 )
 
+// ArtistEmoji is the emoji used for artist log messages.
 const ArtistEmoji = "🎨"
 
 // NewArtist creates the artist agent.
@@ -64,7 +66,7 @@ func NewArtist(ctx context.Context, apiKey string, store storage.Store) (agent.A
 			_, err := ctx.Session().State().Get("visual_brief")
 			if err != nil {
 				slog.Warn("Artist skipping execution: visual_brief missing from state", "error", err)
-				return func(yield func(*session.Event, error) bool) {}
+				return func(_ func(*session.Event, error) bool) {}
 			}
 
 			observability.Report(ctx, fmt.Sprintf("%s The Artist is reading the visual brief...", ArtistEmoji))

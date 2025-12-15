@@ -1,3 +1,4 @@
+// Package main is the entry point for the Sketchnote Artist server.
 package main
 
 import (
@@ -265,7 +266,7 @@ func main() {
 			mu.Unlock()
 
 			// Create a reporter that writes to the stream
-			reporter := func(message string, details ...interface{}) {
+			reporter := func(message string, _ ...interface{}) {
 				slog.Info("Status update", "message", message)
 				payload, _ := json.Marshal(map[string]string{"message": message})
 				if err := writeEvent("status", payload); err != nil {

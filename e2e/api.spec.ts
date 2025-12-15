@@ -51,6 +51,9 @@ test('api: generate sketchnote', async ({ request }) => {
     // Note: This waits for the server to close the connection, which happens when 'event: done' is sent and handler returns
     const streamText = await response.text();
     console.log(`Received stream length: ${streamText.length} bytes`);
+    console.log("--- STREAM CONTENT START ---");
+    console.log(streamText);
+    console.log("--- STREAM CONTENT END ---");
 
     // Parse SSE events to find the final image
     const lines = streamText.split('\n');

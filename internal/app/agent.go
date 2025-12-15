@@ -1,3 +1,4 @@
+// Package app contains the main application logic and agent composition.
 package app
 
 import (

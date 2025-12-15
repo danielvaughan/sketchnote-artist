@@ -1,3 +1,4 @@
+// Package main is the entry point for the Sketchnote Artist CLI.
 package main
 
 import (
@@ -17,13 +18,19 @@ import (
 )
 
 func main() {
+	if err := run(); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+func run() error {
 	ctx := context.Background()
 
 	// Initialize structured logging to file
 	logFile, err := os.OpenFile("sketchnote-artist.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
 	if err != nil {
-		slog.Error("Failed to open log file", "error", err)
-		os.Exit(1)
+		return fmt.Errorf("failed to open log file: %w", err)
 	}
 	defer func() {
 		if err := logFile.Close(); err != nil {
@@ -44,12 +51,11 @@ func main() {
 
 	apiKey := os.Getenv("GOOGLE_API_KEY")
 	if apiKey == "" {
-		slog.Error("GOOGLE_API_KEY not set in environment or .env file")
-		os.Exit(1)
+		return fmt.Errorf("GOOGLE_API_KEY not set in environment or .env file")
 	}
 
 	// Define console reporter
-	consoleReporter := func(msg string, details ...interface{}) {
+	consoleReporter := func(msg string, _ ...interface{}) {
 		fmt.Printf("\n%s\n", msg)
 	}
 
@@ -61,8 +67,7 @@ func main() {
 		APIKey: apiKey,
 	})
 	if err != nil {
-		slog.Error("Failed to create agent", "error", err)
-		os.Exit(1)
+		return fmt.Errorf("failed to create agent: %w", err)
 	}
 
 	// Configure the launcher
@@ -73,7 +78,10 @@ func main() {
 	// Run the agent using the full launcher
 	l := full.NewLauncher()
 	if err := l.Execute(ctx, config, os.Args[1:]); err != nil {
+		// Log specific run error
 		slog.Error("Run failed", "error", err, "syntax", l.CommandLineSyntax())
-		os.Exit(1)
+		return err
 	}
+
+	return nil
 }

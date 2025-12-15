@@ -23,6 +23,7 @@ import (
 	"github.com/danielvaughan/sketchnote-artist/internal/tools"
 )
 
+// CuratorEmoji is the emoji used for curator log messages.
 const CuratorEmoji = "🧐"
 
 // NewCurator creates the curator agent.

@@ -1,3 +1,4 @@
+// Package storage defines the interface and implementations for persistent storage (disk/GCS).
 package storage
 
 import (
@@ -33,7 +34,8 @@ type Store interface {
 // DiskStore implements Store for local file system.
 type DiskStore struct{}
 
-func (s *DiskStore) Save(ctx context.Context, folder, filename string, data []byte) error {
+// Save writes data to the specified folder and filename on disk.
+func (s *DiskStore) Save(_ context.Context, folder, filename string, data []byte) error {
 	// Ensure directory exists
 	if err := os.MkdirAll(folder, 0750); err != nil {
 		return fmt.Errorf("failed to create directory %s: %w", folder, err)
@@ -42,6 +44,7 @@ func (s *DiskStore) Save(ctx context.Context, folder, filename string, data []by
 	return os.WriteFile(fullPath, data, 0600)
 }
 
+// GetPublicURL returns the local file path URL for the stored item.
 func (s *DiskStore) GetPublicURL(folder, filename string) string {
 	// For local dev, we assume the server maps /images/ to sketchnotes/ or images/
 	if folder == "sketchnotes" || folder == "images" {
@@ -51,7 +54,8 @@ func (s *DiskStore) GetPublicURL(folder, filename string) string {
 	return ""
 }
 
-func (s *DiskStore) Exists(ctx context.Context, folder, filename string) (bool, error) {
+// Exists checks if the file exists on disk.
+func (s *DiskStore) Exists(_ context.Context, folder, filename string) (bool, error) {
 	fullPath := filepath.Join(folder, filename)
 	_, err := os.Stat(fullPath)
 	if err == nil {
@@ -63,7 +67,8 @@ func (s *DiskStore) Exists(ctx context.Context, folder, filename string) (bool, 
 	return false, err
 }
 
-func (s *DiskStore) Get(ctx context.Context, folder, filename string) (io.ReadCloser, error) {
+// Get retrieves the file content from disk.
+func (s *DiskStore) Get(_ context.Context, folder, filename string) (io.ReadCloser, error) {
 	fullPath := filepath.Join(folder, filename)
 	return os.Open(fullPath) //nolint:gosec // Path is constructed safely with filepath.Join and sanitized inputs
 }
@@ -75,6 +80,7 @@ type GCSStore struct {
 	ImagesBucket string
 }
 
+// NewGCSStore creates a new GCSStore with the specified buckets.
 func NewGCSStore(ctx context.Context, briefsBucket, imagesBucket string) (*GCSStore, error) {
 	client, err := storage.NewClient(ctx)
 	if err != nil {
@@ -98,6 +104,7 @@ func (s *GCSStore) getBucketName(folder string) (string, error) {
 	}
 }
 
+// Save writes data to the specified folder and filename in GCS.
 func (s *GCSStore) Save(ctx context.Context, folder, filename string, data []byte) error {
 	bucketName, err := s.getBucketName(folder)
 	if err != nil {
@@ -114,6 +121,7 @@ func (s *GCSStore) Save(ctx context.Context, folder, filename string, data []byt
 	return nil
 }
 
+// GetPublicURL returns the public HTTP URL for the GCS object.
 func (s *GCSStore) GetPublicURL(folder, filename string) string {
 	bucketName, err := s.getBucketName(folder)
 	if err != nil {
@@ -123,6 +131,7 @@ func (s *GCSStore) GetPublicURL(folder, filename string) string {
 	return fmt.Sprintf("https://storage.googleapis.com/%s/%s", bucketName, filename)
 }
 
+// Exists checks if the object exists in GCS.
 func (s *GCSStore) Exists(ctx context.Context, folder, filename string) (bool, error) {
 	bucketName, err := s.getBucketName(folder)
 	if err != nil {
@@ -138,6 +147,7 @@ func (s *GCSStore) Exists(ctx context.Context, folder, filename string) (bool, e
 	return true, nil
 }
 
+// Get retrieves the object content from GCS.
 func (s *GCSStore) Get(ctx context.Context, folder, filename string) (io.ReadCloser, error) {
 	bucketName, err := s.getBucketName(folder)
 	if err != nil {
