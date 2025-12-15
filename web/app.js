@@ -53,7 +53,8 @@ async function generateSketchnote() {
         new_message: {
           role: "user",
           parts: [{ text: videoUrl }]
-        }
+        },
+        "streaming": true
       })
     });
 
