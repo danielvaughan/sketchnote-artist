@@ -1,6 +1,6 @@
 # Build Stage
-# Use Golang 1.25 as the builder
-FROM golang:1.25 AS builder
+# Use Chainguard Go as the builder (secure, minimal, signed)
+FROM cgr.dev/chainguard/go:latest AS builder
 
 WORKDIR /app
 
@@ -15,24 +15,24 @@ COPY . .
 # CGO_ENABLED=0 ensures a static binary
 RUN CGO_ENABLED=0 GOOS=linux go build -v -o server ./cmd/server
 
-# Runtime Stage
-# Use Debian Slim for a small but standard runtime environment
-FROM debian:bookworm-slim
+# Create directories for output artifacts in builder (since distroless has no shell/mkdir)
+RUN mkdir -p sketchnotes visual-briefs
 
-# Install CA certificates to enable HTTPS calls
-RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
+# Runtime Stage
+# Use Chainguard Static for 0-CVE guarantee and minimal runtime
+FROM cgr.dev/chainguard/static:latest
 
 WORKDIR /app
 
 # Copy binary from builder
-COPY --from=builder /app/server ./server
+COPY --from=builder --chown=nonroot:nonroot /app/server ./server
 
 # Copy web assets
-COPY web ./web
+COPY --chown=nonroot:nonroot web ./web
 
-# Create directories for output artifacts
-# Cloud Run is stateless, so these will be ephemeral unless mounted
-RUN mkdir -p sketchnotes visual-briefs
+# Copy empty directories with correct ownership for the app to write to
+COPY --from=builder --chown=nonroot:nonroot /app/sketchnotes ./sketchnotes
+COPY --from=builder --chown=nonroot:nonroot /app/visual-briefs ./visual-briefs
 
 # Set environment variables
 ENV PORT=8080
