@@ -10,6 +10,12 @@ resource "google_cloud_run_v2_service" "default" {
       ports {
         container_port = 8080
       }
+      resources {
+        limits = {
+          cpu    = "2"
+          memory = "2Gi"
+        }
+      }
       env {
         name  = "GOOGLE_API_KEY"
         value = var.google_api_key

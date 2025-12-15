@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"log/slog"
@@ -18,6 +20,7 @@ import (
 	"google.golang.org/adk/memory"
 	"google.golang.org/adk/server/adkrest"
 	"google.golang.org/adk/session"
+	"google.golang.org/genai"
 
 	"github.com/joho/godotenv"
 
@@ -144,6 +147,90 @@ func main() {
 			return
 		}
 
+		// NEW: Custom Streaming Handler (Server-Sent Events)
+		// This bypasses the default ADK REST handler to provide real-time updates
+		// and prevent "socket hang up" on long-running requests.
+		if r.URL.Path == "/stream-run" && r.Method == "POST" {
+			// 1. Parse Request
+			var req struct {
+				SessionID  string `json:"sessionId"`
+				NewMessage struct {
+					Parts []struct {
+						Text string `json:"text"`
+					} `json:"parts"`
+				} `json:"newMessage"`
+			}
+			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+				http.Error(w, "Invalid JSON: "+err.Error(), http.StatusBadRequest)
+				return
+			}
+			defer r.Body.Close()
+
+			if req.SessionID == "" {
+				http.Error(w, "sessionId is required", http.StatusBadRequest)
+				return
+			}
+			if len(req.NewMessage.Parts) == 0 {
+				http.Error(w, "message text is required", http.StatusBadRequest)
+				return
+			}
+
+			// 2. Prepare Context
+			// We need to implement agent.InvocationContext to run the agent.
+			// Since we don't have access to the internal adkrest context logic, we'll create a minimal implementation.
+			invCtx := &SimpleInvocationContext{
+				Context:   r.Context(),
+				sessionID: req.SessionID,
+				userContent: &genai.Content{
+					Parts: []*genai.Part{{Text: req.NewMessage.Parts[0].Text}},
+				},
+			}
+
+			// 3. Prepare Response for SSE
+			w.Header().Set("Content-Type", "text/event-stream")
+			w.Header().Set("Cache-Control", "no-cache")
+			w.Header().Set("Connection", "keep-alive")
+
+			flusher, ok := w.(http.Flusher)
+			if !ok {
+				http.Error(w, "Streaming not supported", http.StatusInternalServerError)
+				return
+			}
+
+			// 4. Run Agent and Stream Events
+			slog.Info("Starting streaming run", "session_id", req.SessionID)
+
+			// Send initial heartbeat
+			fmt.Fprintf(w, ": heartbeat\n\n")
+			flusher.Flush()
+
+			for event, err := range agentInstance.Run(invCtx) {
+				if err != nil {
+					slog.Error("Error during agent run", "error", err)
+					// Send error event
+					data, _ := json.Marshal(map[string]string{"error": err.Error()})
+					fmt.Fprintf(w, "event: error\ndata: %s\n\n", data)
+					flusher.Flush()
+					return
+				}
+
+				// Serialize event to JSON
+				data, err := json.Marshal(event)
+				if err != nil {
+					slog.Warn("Failed to marshal event", "error", err)
+					continue
+				}
+
+				fmt.Fprintf(w, "data: %s\n\n", data)
+				flusher.Flush()
+			}
+
+			// Send done event
+			fmt.Fprintf(w, "event: done\ndata: {}\n\n")
+			flusher.Flush()
+			return
+		}
+
 		// Fallback to ADK API handler
 		handler.ServeHTTP(w, r)
 	})
@@ -158,3 +245,21 @@ func main() {
 		log.Fatal(err)
 	}
 }
+
+// SimpleInvocationContext implements agent.InvocationContext for streaming
+type SimpleInvocationContext struct {
+	context.Context
+	sessionID   string
+	userContent *genai.Content
+}
+
+func (s *SimpleInvocationContext) Session() session.Session    { return nil } // Not used by Sequential Agent directly for flow control usually
+func (s *SimpleInvocationContext) RunConfig() *agent.RunConfig { return nil }
+func (s *SimpleInvocationContext) InvocationID() string        { return "stream-" + s.sessionID }
+func (s *SimpleInvocationContext) Memory() agent.Memory        { return nil }
+func (s *SimpleInvocationContext) Artifacts() agent.Artifacts  { return nil }
+func (s *SimpleInvocationContext) UserContent() *genai.Content { return s.userContent }
+func (s *SimpleInvocationContext) EndInvocation()              {}
+func (s *SimpleInvocationContext) Ended() bool                 { return false }
+func (s *SimpleInvocationContext) Agent() agent.Agent          { return nil }
+func (s *SimpleInvocationContext) Branch() string              { return "" }

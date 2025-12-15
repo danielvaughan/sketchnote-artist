@@ -1,10 +1,10 @@
 const API_BASE = window.location.origin;
+const APP_NAME = "sketchnote-artist";
+const USER_ID = "web-guest";
 
 async function generateSketchnote() {
   const urlInput = document.getElementById('youtubeUrl');
   const generateBtn = document.getElementById('generateBtn');
-  const btnIcon = generateBtn.querySelector('.material-icons');
-
 
   const idleState = document.getElementById('idleState');
   const progressSection = document.getElementById('progressSection');
@@ -15,48 +15,37 @@ async function generateSketchnote() {
   const videoUrl = urlInput.value.trim();
 
   if (!videoUrl) {
-    statusMsg.innerText = "Please enter a valid YouTube URL.";
-    statusMsg.style.color = "#FF0000";
+    alert("Please enter a valid YouTube URL");
     return;
   }
 
-  // 1. UI Transition to Processing
+  // Reset UI State
   idleState.classList.add('hidden');
   resultSection.classList.add('hidden');
   progressSection.classList.remove('hidden');
-
-  // Button State
+  statusMsg.innerText = "Initializing...";
+  statusMsg.style.color = "var(--text-secondary)";
   generateBtn.disabled = true;
 
-
-  statusMsg.innerText = "Starting engine...";
-  statusMsg.style.color = "var(--text-secondary)";
-
   try {
-    // 2. Create Session
-    statusMsg.innerText = "Connecting to agent...";
-    const sessionRes = await fetch(`${API_BASE}/apps/sketchnote-artist/users/web-guest/sessions`, {
+    // 1. Create Session
+    const sessionResp = await fetch(`/apps/${APP_NAME}/users/${USER_ID}/sessions`, {
       method: 'POST'
     });
 
-    if (!sessionRes.ok) throw new Error(`Failed to create session: ${sessionRes.statusText}`);
-
-    const sessionData = await sessionRes.json();
+    if (!sessionResp.ok) throw new Error("Failed to create session");
+    const sessionData = await sessionResp.json();
     const sessionId = sessionData.id;
-    console.log(`Session created: ${sessionId}`);
 
-    // 3. Run Agent (Long Polling / Wait)
-    statusMsg.innerText = "Watching video & sketching...";
+    // 2. Start Streaming Request
+    statusMsg.innerText = "Connecting to agent...";
 
-    // Simulating "steps" by updating text occasionally if it takes too long? 
-    // For now, keep it simple as requested.
-
-    const runRes = await fetch(`${API_BASE}/run`, {
+    const response = await fetch('/stream-run', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        appName: "sketchnote-artist",
-        userId: "web-guest",
+        appName: APP_NAME,
+        userId: USER_ID,
         sessionId: sessionId,
         newMessage: {
           role: "user",
@@ -65,59 +54,105 @@ async function generateSketchnote() {
       })
     });
 
-    if (!runRes.ok) throw new Error("Agent execution failed");
+    if (!response.ok) throw new Error(`Stream failed: ${response.statusText}`);
 
-    const runData = await runRes.json();
-    console.log("Agent response:", runData);
+    // 3. Read the Stream
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
 
-    // 4. Extract Filename
-    let filename = null;
-    const responseText = JSON.stringify(runData); // Naive, but usually works for finding the filename in the JSON dump if structure varies
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
 
-    // Regex from previous version
-    const match = responseText.match(/(?:generated the sketchnote: |filename: |save it as |saved to )["']?([^"'\s,]+?\.(?:png|jpg|jpeg|webp))["']?/i);
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n\n');
+      buffer = lines.pop(); // Keep incomplete chunk
 
-    if (match && match[1]) {
-      filename = match[1].trim();
-      if (filename.endsWith('.')) filename = filename.slice(0, -1);
-    } else {
-      const fallback = responseText.match(/([a-zA-Z0-9_\-]+\.(?:png|jpg|webp))/);
-      if (fallback) filename = fallback[0];
-    }
+      for (const line of lines) {
+        if (line.startsWith(':')) continue; // Ignore comments/heartbeats
+        if (line.startsWith('event: done')) return; // Success!
+        if (line.startsWith('event: error')) {
+          const data = JSON.parse(line.substring(dataIndex + 5));
+          throw new Error(data.error || "Unknown stream error");
+        }
 
-    if (!filename) throw new Error("Could not find generated image filename.");
-
-    // 5. Show Result
-    // Add small delay to ensure FS write? (Usually immediate if response came back)
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    const imagePath = `${API_BASE}/images/${filename}`;
-
-    // Validate image fetch before showing
-    try {
-      const imgCheck = await fetch(imagePath);
-      if (!imgCheck.ok) {
-        throw new Error(`Failed to fetch image: ${filename} (Status: ${imgCheck.status})`);
+        if (line.startsWith('data: ')) {
+          const jsonStr = line.substring(6);
+          try {
+            const event = JSON.parse(jsonStr);
+            handleAgentEvent(event, statusMsg, resultImage, progressSection, resultSection);
+          } catch (e) {
+            console.warn("Failed to parse event", e);
+          }
+        }
       }
-    } catch (e) {
-      throw new Error(`Failed to load image '${filename}': ${e.message}`);
     }
-
-    resultImage.src = imagePath;
-
-    progressSection.classList.add('hidden');
-    resultSection.classList.remove('hidden');
-    statusMsg.innerText = "Sketchnote created successfully!";
 
   } catch (error) {
     console.error(error);
     statusMsg.innerText = `Error: ${error.message}`;
     statusMsg.style.color = "#FF0000";
     progressSection.classList.add('hidden');
-    idleState.classList.remove('hidden'); // Go back to idle on error
+    idleState.classList.remove('hidden');
   } finally {
     generateBtn.disabled = false;
+  }
+}
 
+function handleAgentEvent(event, statusMsg, resultImage, progressSection, resultSection) {
+  // Handle different event types from ADK
+  // This depends on the exact JSON structure of *session.Event
+
+  // Example heuristics based on typical ADK event structure:
+  // 1. Model Call (Thinking)
+  if (event.Recall || (event.Models && event.Models.length > 0)) {
+    statusMsg.innerText = "Curator is analyzing video...";
+  }
+
+  // 2. Tool Call (Summarizing)
+  if (event.ToolCall) {
+    const toolName = event.ToolCall.Name;
+    if (toolName.includes('summarize')) {
+      statusMsg.innerText = "Summarizing video content...";
+    } else if (toolName.includes('generate_image')) {
+      statusMsg.innerText = "Artist is sketching...";
+    }
+  }
+
+  // 3. Model Response (Final Output)
+  if (event.Content && event.Content.Parts) {
+    for (const part of event.Content.Parts) {
+      if (part.Text && part.Text.includes('.png')) {
+        // Found image path!
+        const filename = part.Text.trim();
+        // Assuming filename matches locally served pattern
+        // Safety check: is it a path or just name?
+        // Extract basename if needed, but tool usually returns basics
+
+        // Ensure we check for the actual filename
+        // The text might be "Image saved to: foo.png"
+        // We need to extract the .png part.
+        const match = filename.match(/[\w-]+\.png/);
+        if (match) {
+          const cleanFilename = match[0];
+          const imagePath = `/images/${cleanFilename}`;
+
+          // Preload image to ensure it's ready
+          const img = new Image();
+          img.onload = () => {
+            resultImage.src = imagePath;
+            progressSection.classList.add('hidden');
+            resultSection.classList.remove('hidden');
+            statusMsg.innerText = "Sketchnote created successfully!";
+          };
+          img.onerror = () => {
+            statusMsg.innerText = "Image generated but failed to load.";
+          };
+          img.src = imagePath;
+        }
+      }
+    }
   }
 }
 
