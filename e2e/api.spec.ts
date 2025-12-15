@@ -24,7 +24,8 @@ test('api: generate sketchnote', async ({ request }) => {
     const testVideoUrl = 'https://www.youtube.com/watch?v=jNQXAC9IVRw'; // Me at the zoo
     console.log(`Submitting video: ${testVideoUrl}`);
 
-    const runResp = await request.post(`${serviceUrl}/run`, {
+    // Call streaming endpoint
+    const response = await request.post(`${serviceUrl}/stream-run`, {
       data: {
         appName: appName,
         userId: userId,
@@ -36,26 +37,54 @@ test('api: generate sketchnote', async ({ request }) => {
           ]
         }
       },
-      timeout: 300000 // 5 minutes for processing
+      headers: {
+        'Accept': 'text/event-stream'
+      },
+      timeout: 300000 // 5 minutes
     });
 
-    if (!runResp.ok()) {
-      throw new Error(`Run Agent failed: ${runResp.status()} ${runResp.statusText()}`);
+    if (!response.ok()) {
+      throw new Error(`Stream request failed: ${response.status()} ${response.statusText()}`);
     }
 
-    const runData = await runResp.json();
+    // Read the full SSE stream text
+    // Note: This waits for the server to close the connection, which happens when 'event: done' is sent and handler returns
+    const streamText = await response.text();
+    console.log(`Received stream length: ${streamText.length} bytes`);
 
-    // Verify response structure
-    // The artist agent returns a text response describing the image path
-    expect(runData.responses).toBeDefined();
-    expect(runData.responses.length).toBeGreaterThan(0);
+    // Parse SSE events to find the final image
+    const lines = streamText.split('\n');
+    let foundImage = false;
+    let finalContent = '';
 
-    const lastResponse = runData.responses[runData.responses.length - 1];
-    const textContent = lastResponse.parts[0].text;
-    console.log(`Agent Response: ${textContent}`);
+    for (const line of lines) {
+      if (line.startsWith('data: ')) {
+        try {
+          const jsonStr = line.substring(6);
+          if (jsonStr.trim() === '{}') continue; // Done event data
 
-    expect(textContent).toContain('sketchnote here:');
-    expect(textContent).toContain('.png');
+          const event = JSON.parse(jsonStr);
+
+          // Check for Content with image
+          if (event.Content && event.Content.Parts) {
+            for (const part of event.Content.Parts) {
+              if (part.Text) {
+                finalContent += part.Text;
+                if (part.Text.includes('.png')) {
+                  foundImage = true;
+                  console.log(`Found image in event: ${part.Text}`);
+                }
+              }
+            }
+          }
+        } catch (e) {
+          // Ignore parse errors (e.g. partial lines if any, though .text() should be complete)
+        }
+      }
+    }
+
+    expect(foundImage).toBe(true);
+    expect(finalContent).toContain('.png');
 
   } catch (error) {
     console.error("Test failed, fetching backend logs...");

@@ -27,6 +27,9 @@ async function generateSketchnote() {
   statusMsg.style.color = "var(--text-secondary)";
   generateBtn.disabled = true;
 
+  // Track duration for debugging timeouts
+  const startTime = Date.now();
+
   try {
     // 1. Create Session
     const sessionResp = await fetch(`/apps/${APP_NAME}/users/${USER_ID}/sessions`, {
@@ -73,8 +76,28 @@ async function generateSketchnote() {
         if (line.startsWith(':')) continue; // Ignore comments/heartbeats
         if (line.startsWith('event: done')) return; // Success!
         if (line.startsWith('event: error')) {
-          const data = JSON.parse(line.substring(dataIndex + 5));
-          throw new Error(data.error || "Unknown stream error");
+          // Locate data extraction more robustly
+          const jsonStart = line.indexOf('{');
+          if (jsonStart !== -1) {
+            const data = JSON.parse(line.substring(jsonStart));
+            throw new Error(data.error || "Unknown stream error");
+          }
+        }
+
+        // Handle explicit status events from observability
+        if (line.startsWith('event: status')) {
+          const jsonStart = line.indexOf('{');
+          if (jsonStart !== -1) {
+            try {
+              const data = JSON.parse(line.substring(jsonStart));
+              if (data.message) {
+                statusMsg.innerText = data.message;
+              }
+            } catch (e) {
+              console.warn("Failed to parse status event", e);
+            }
+          }
+          continue; // Skip trying to parse as 'data: '
         }
 
         if (line.startsWith('data: ')) {
@@ -90,8 +113,16 @@ async function generateSketchnote() {
     }
 
   } catch (error) {
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
     console.error(error);
-    statusMsg.innerText = `Error: ${error.message}`;
+
+    // Check for "Failed to fetch" which usually means network error/timeout
+    if (error.message === "Failed to fetch") {
+      statusMsg.innerText = `Network Error: Failed to reach server (${elapsed}s). Check connection or VPN.`;
+    } else {
+      statusMsg.innerText = `Error: ${error.message} (${elapsed}s)`;
+    }
+
     statusMsg.style.color = "#FF0000";
     progressSection.classList.add('hidden');
     idleState.classList.remove('hidden');

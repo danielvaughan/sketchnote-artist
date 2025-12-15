@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"sync" // Added for streaming mutex
 
 	// The 'time' import is not duplicated in the provided code.
 	// If there was a duplicate, it would be removed here.
@@ -25,6 +26,7 @@ import (
 	"github.com/joho/godotenv"
 
 	"github.com/danielvaughan/sketchnote-artist/internal/app"
+	"github.com/danielvaughan/sketchnote-artist/internal/observability" // Added for streaming status
 	"github.com/danielvaughan/sketchnote-artist/internal/storage"
 )
 
@@ -239,23 +241,50 @@ func main() {
 			// 4. Run Agent and Stream Events
 			slog.Info("Starting streaming run", "session_id", req.SessionID)
 
+			// Helper to safely write events to the stream
+			var mu sync.Mutex
+			writeEvent := func(evtType string, data []byte) error {
+				mu.Lock()
+				defer mu.Unlock()
+				if _, err := fmt.Fprintf(w, "event: %s\ndata: %s\n\n", evtType, data); err != nil {
+					return err
+				}
+				flusher.Flush()
+				return nil
+			}
+
 			// Send initial heartbeat
+			mu.Lock()
 			if _, err := fmt.Fprintf(w, ": heartbeat\n\n"); err != nil {
+				mu.Unlock()
 				slog.Error("Failed to write heartbeat", "error", err)
 				return
 			}
 			flusher.Flush()
+			mu.Unlock()
+
+			// Create a reporter that writes to the stream
+			reporter := func(message string, details ...interface{}) {
+				slog.Info("Status update", "message", message)
+				payload, _ := json.Marshal(map[string]string{"message": message})
+				if err := writeEvent("status", payload); err != nil {
+					slog.Warn("Failed to write status event", "error", err)
+				}
+			}
+
+			// Inject reporter into context
+			ctxWithReporter := observability.WithStatusReporter(invCtx.Context, reporter)
+			invCtx.Context = ctxWithReporter
 
 			for event, err := range agentInstance.Run(invCtx) {
 				if err != nil {
 					slog.Error("Error during agent run", "error", err)
 					// Send error event
-					data, _ := json.Marshal(map[string]string{"error": err.Error()})
-					if _, err := fmt.Fprintf(w, "event: error\ndata: %s\n\n", data); err != nil {
+					payload, _ := json.Marshal(map[string]string{"error": err.Error()})
+					if err := writeEvent("error", payload); err != nil {
 						slog.Error("Failed to write error event", "error", err)
 						return
 					}
-					flusher.Flush()
 					return
 				}
 
@@ -266,19 +295,22 @@ func main() {
 					continue
 				}
 
+				// Write standard ADK event
+				mu.Lock()
 				if _, err := fmt.Fprintf(w, "data: %s\n\n", data); err != nil {
+					mu.Unlock()
 					slog.Error("Failed to write data event", "error", err)
 					return
 				}
 				flusher.Flush()
+				mu.Unlock()
 			}
 
 			// Send done event
-			if _, err := fmt.Fprintf(w, "event: done\ndata: {}\n\n"); err != nil {
+			if err := writeEvent("done", []byte("{}")); err != nil {
 				slog.Error("Failed to write done event", "error", err)
 				return
 			}
-			flusher.Flush()
 			return
 		}
 

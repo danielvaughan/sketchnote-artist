@@ -26,7 +26,8 @@ test('generate sketchnote', async ({ page }) => {
 
   // 5. Verify Processing State
   const statusMsg = page.locator('#statusMessage');
-  await expect(statusMsg).toContainText(/Watching video/i, { timeout: 10000 });
+  // 'Connecting to agent...' appears immediately after session creation
+  await expect(statusMsg).toContainText(/Connecting to agent...|Curator is analyzing/i, { timeout: 15000 });
 
   // 6. Verify Result
   // This might take regular processing time (~30-60s depending on backend)
