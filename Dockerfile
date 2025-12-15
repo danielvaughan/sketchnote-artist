@@ -1,6 +1,6 @@
 # Build Stage
 # Use Chainguard Go as the builder (secure, minimal, signed)
-FROM cgr.dev/chainguard/go:latest AS builder
+FROM cgr.dev/chainguard/go:latest@sha256:86178b42db2e32763304e37f4cf3c6ec25b7bb83660dcb985ab603e3726a65a6 AS builder
 
 WORKDIR /app
 
@@ -20,7 +20,7 @@ RUN mkdir -p sketchnotes visual-briefs
 
 # Runtime Stage
 # Use Chainguard Static for 0-CVE guarantee and minimal runtime
-FROM cgr.dev/chainguard/static:latest
+FROM cgr.dev/chainguard/static:latest@sha256:1888f4db2c92e5a3e1b81952d8727e63c1b5b87ad3df374de318999beb4fd194
 
 WORKDIR /app
 
