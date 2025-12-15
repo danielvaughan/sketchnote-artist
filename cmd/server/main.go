@@ -156,8 +156,11 @@ func main() {
 		if r.URL.Path == "/stream-run" && r.Method == "POST" {
 			// 1. Parse Request
 			var req struct {
+				AppName    string `json:"appName"`
+				UserID     string `json:"userId"`
 				SessionID  string `json:"sessionId"`
 				NewMessage struct {
+					Role  string `json:"role"`
 					Parts []struct {
 						Text string `json:"text"`
 					} `json:"parts"`
@@ -184,7 +187,11 @@ func main() {
 
 			// 2. Prepare Context
 			// Retrieve the session to ensure state (like visual_brief) is accessible
-			resp, err := sessionSvc.Get(r.Context(), &session.GetRequest{SessionID: req.SessionID})
+			resp, err := sessionSvc.Get(r.Context(), &session.GetRequest{
+				AppName:   req.AppName,
+				UserID:    req.UserID,
+				SessionID: req.SessionID,
+			})
 			if err != nil {
 				slog.Error("Failed to functionality load session", "session_id", req.SessionID, "error", err)
 				http.Error(w, "Session not found", http.StatusNotFound)
