@@ -164,7 +164,11 @@ func main() {
 				http.Error(w, "Invalid JSON: "+err.Error(), http.StatusBadRequest)
 				return
 			}
-			defer r.Body.Close()
+			defer func() {
+				if err := r.Body.Close(); err != nil {
+					slog.Warn("Failed to close request body", "error", err)
+				}
+			}()
 
 			if req.SessionID == "" {
 				http.Error(w, "sessionId is required", http.StatusBadRequest)
@@ -201,7 +205,10 @@ func main() {
 			slog.Info("Starting streaming run", "session_id", req.SessionID)
 
 			// Send initial heartbeat
-			fmt.Fprintf(w, ": heartbeat\n\n")
+			if _, err := fmt.Fprintf(w, ": heartbeat\n\n"); err != nil {
+				slog.Error("Failed to write heartbeat", "error", err)
+				return
+			}
 			flusher.Flush()
 
 			for event, err := range agentInstance.Run(invCtx) {
@@ -209,7 +216,10 @@ func main() {
 					slog.Error("Error during agent run", "error", err)
 					// Send error event
 					data, _ := json.Marshal(map[string]string{"error": err.Error()})
-					fmt.Fprintf(w, "event: error\ndata: %s\n\n", data)
+					if _, err := fmt.Fprintf(w, "event: error\ndata: %s\n\n", data); err != nil {
+						slog.Error("Failed to write error event", "error", err)
+						return
+					}
 					flusher.Flush()
 					return
 				}
@@ -221,12 +231,18 @@ func main() {
 					continue
 				}
 
-				fmt.Fprintf(w, "data: %s\n\n", data)
+				if _, err := fmt.Fprintf(w, "data: %s\n\n", data); err != nil {
+					slog.Error("Failed to write data event", "error", err)
+					return
+				}
 				flusher.Flush()
 			}
 
 			// Send done event
-			fmt.Fprintf(w, "event: done\ndata: {}\n\n")
+			if _, err := fmt.Fprintf(w, "event: done\ndata: {}\n\n"); err != nil {
+				slog.Error("Failed to write done event", "error", err)
+				return
+			}
 			flusher.Flush()
 			return
 		}
