@@ -45,99 +45,51 @@ sequenceDiagram
 
 ## 3. Backend Implementation (Go)
 
-To implement this with the ADK, we bypass the standard `adkrest` handler for specific endpoints.
+With the ADK, you can leverage the built-in `adkrest` handler which supports SSE out of the box.
 
-### 3.1. The Custom Handler
-Located in `cmd/server/main.go`. It sets the correct headers and casts the `http.ResponseWriter` to a `http.Flusher`.
+### 3.1. Using Standard Endpoints
+You do **not** need to write a custom streaming handler. Instead, simply configure your `launcher` and use `adkrest.NewHandler`.
 
 ```go
-// 1. Set Headers
-w.Header().Set("Content-Type", "text/event-stream")
-w.Header().Set("Cache-Control", "no-cache")
-w.Header().Set("Connection", "keep-alive")
-
-// 2. Flush Headers immediately
-if flusher, ok := w.(http.Flusher); ok {
-    flusher.Flush()
+// 1. Configure Services and Agent
+config := &launcher.Config{
+    AgentLoader:     agent.NewSingleLoader(agentInstance),
+    SessionService:  session.InMemoryService(),
+    ArtifactService: artifact.InMemoryService(),
+    MemoryService:   memory.InMemoryService(),
 }
 
-// 3. Send Heartbeat (Comment line starting with colon)
-fmt.Fprintf(w, ": heartbeat\n\n")
-flusher.Flush()
+// 2. Create the Standard Handler
+// This handler automatically exposes:
+// - POST /run (Standard REST)
+// - POST /run_sse (Server-Sent Events)
+handler := adkrest.NewHandler(config)
+
+// 3. Serve via HTTP
+http.ListenAndServe(":8080", handler)
 ```
 
-### 3.2. Implementing `InvocationContext`
-The ADK `agent.Run` method requires an `InvocationContext`. Since we are running outside the standard launcher flow, we must implement a minimal context.
+### 3.2. Advantages of Standard Handler
+*   **Automatic Context Managament**: The `adkrest` package handles `InvocationContext` creation, ensuring sessions and services are correctly populated.
+*   **Standard Events**: Emits standard JSON-formatted events suitable for ADK client libraries or custom parsers.
+*   **Maintenance**: No need to maintain custom panic recovery or connection flushing logic.
 
-**Critical**: You **must** populate the `Session()` method with a real session object if your agents rely on state (e.g., retrieving artifacts from previous steps).
-
-```go
-// SimpleInvocationContext implements agent.InvocationContext for streaming
-type SimpleInvocationContext struct {
-    context.Context
-    sessionID   string
-    session     session.Session // <--- Crucial field
-    userContent *genai.Content
-}
-
-// Implement the interface methods
-func (s *SimpleInvocationContext) Session() session.Session    { return s.session }
-func (s *SimpleInvocationContext) UserContent() *genai.Content { return s.userContent }
-func (s *SimpleInvocationContext) InvocationID() string        { return "stream-" + s.sessionID }
-func (s *SimpleInvocationContext) RunConfig() *agent.RunConfig { return nil }
-func (s *SimpleInvocationContext) Memory() agent.Memory        { return nil }
-func (s *SimpleInvocationContext) Artifacts() agent.Artifacts  { return nil }
-func (s *SimpleInvocationContext) EndInvocation()              {}
-func (s *SimpleInvocationContext) Ended() bool                 { return false }
-func (s *SimpleInvocationContext) Agent() agent.Agent          { return nil }
-func (s *SimpleInvocationContext) Branch() string              { return "" }
-```
-
-### 3.3. Running the Agent (The Loop)
-Use `agent.Run(ctx)` which returns a Go iterator (`iter.Seq2`). This allows you to stream events one by one.
-
-```go
-// 1. Retrieve the Session State
-// You need access to your 'sessionService' (e.g., session.InMemoryService())
-resp, err := sessionSvc.Get(r.Context(), &session.GetRequest{
-    AppName:   "my-app",
-    UserID:    "user-123",
-    SessionID: req.SessionID,
-})
-if err != nil {
-    // Handle error (session not found)
-    return
-}
-
-// 2. Create Context
-invCtx := &SimpleInvocationContext{
-    Context:     r.Context(),
-    sessionID:   req.SessionID,
-    session:     resp.Session, // Pass the retrieved session
-    userContent: &genai.Content{Parts: []*genai.Part{{Text: "User Input"}}},
-}
-
-// 3. Iterate over ADK events
-for event, err := range agentInstance.Run(invCtx) {
-    if err != nil {
-        // Send error event to client
-        fmt.Fprintf(w, "event: error\ndata: {\"error\": \"%s\"}\n\n", err.Error())
-        flusher.Flush()
-        return
+### 3.3 Endpoint Usage
+*   **Endpoint**: `POST /run_sse`
+*   **Headers**: `Content-Type: application/json`
+*   **Body** (JSON):
+    ```json
+    {
+      "app_name": "my-app",
+      "user_id": "user-123",
+      "session_id": "session-456",
+      "new_message": {
+        "role": "user",
+        "parts": [{ "text": "Hello agent" }]
+      }
     }
+    ```
 
-    // Serialize event to JSON
-    data, _ := json.Marshal(event)
-    
-    // Write SSE formatted message (data: <json>\n\n)
-    fmt.Fprintf(w, "data: %s\n\n", data)
-    flusher.Flush()
-}
-
-// 4. Send Done Event
-fmt.Fprintf(w, "event: done\ndata: {}\n\n")
-flusher.Flush()
-```
 
 ## 4. Frontend Implementation (Vanilla JS)
 
@@ -147,9 +99,14 @@ Modern browsers support `EventSource`, but it doesn't support `POST` requests. I
 Located in `web/app.js`.
 
 ```javascript
-const response = await fetch('/stream-run', {
+const response = await fetch('/run_sse', {
     method: 'POST',
-    body: JSON.stringify({ ... })
+    body: JSON.stringify({
+        app_name: "my-app",
+        user_id: "user-123",
+        session_id: "session-456",
+        new_message: { ... }
+    })
 });
 
 const reader = response.body.getReader();
