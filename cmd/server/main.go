@@ -3,17 +3,12 @@ package main
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"io"
 	"log"
 	"log/slog"
 	"net/http"
 	"os"
-	"sync" // Added for streaming mutex
 
-	// The 'time' import is not duplicated in the provided code.
-	// If there was a duplicate, it would be removed here.
 	"time"
 
 	"google.golang.org/adk/agent"
@@ -22,12 +17,10 @@ import (
 	"google.golang.org/adk/memory"
 	"google.golang.org/adk/server/adkrest"
 	"google.golang.org/adk/session"
-	"google.golang.org/genai"
 
 	"github.com/joho/godotenv"
 
 	"github.com/danielvaughan/sketchnote-artist/internal/app"
-	"github.com/danielvaughan/sketchnote-artist/internal/observability" // Added for streaming status
 	"github.com/danielvaughan/sketchnote-artist/internal/storage"
 )
 
@@ -81,13 +74,10 @@ func main() {
 	}
 	slog.Info("Agent created successfully")
 
-	// Initialize services
-	sessionSvc := session.InMemoryService()
-
 	// Configure the launcher with in-memory services
 	config := &launcher.Config{
 		AgentLoader:     agent.NewSingleLoader(agentInstance),
-		SessionService:  sessionSvc,
+		SessionService:  session.InMemoryService(),
 		ArtifactService: artifact.InMemoryService(),
 		MemoryService:   memory.InMemoryService(),
 	}
@@ -153,180 +143,6 @@ func main() {
 			return
 		}
 
-		// NEW: Custom Streaming Handler (Server-Sent Events)
-		// This bypasses the default ADK REST handler to provide real-time updates
-		// and prevent "socket hang up" on long-running requests.
-		if r.URL.Path == "/stream-run" && r.Method == "POST" {
-			// 1. Parse Request
-			var req struct {
-				AppName    string `json:"appName"`
-				UserID     string `json:"userId"`
-				SessionID  string `json:"sessionId"`
-				NewMessage struct {
-					Role  string `json:"role"`
-					Parts []struct {
-						Text string `json:"text"`
-					} `json:"parts"`
-				} `json:"newMessage"`
-			}
-			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-				http.Error(w, "Invalid JSON: "+err.Error(), http.StatusBadRequest)
-				return
-			}
-			defer func() {
-				if err := r.Body.Close(); err != nil {
-					slog.Warn("Failed to close request body", "error", err)
-				}
-			}()
-
-			if req.SessionID == "" {
-				http.Error(w, "sessionId is required", http.StatusBadRequest)
-				return
-			}
-			if len(req.NewMessage.Parts) == 0 {
-				http.Error(w, "message text is required", http.StatusBadRequest)
-				return
-			}
-
-			var headersSent bool
-			defer func() {
-				if r := recover(); r != nil {
-					slog.Error("Panic in streaming handler", "panic", r)
-					if headersSent {
-						// Attempt to write SSE error event
-						// We ignore errors here as the connection might be broken
-						if _, err := fmt.Fprintf(w, "event: error\ndata: {\"error\": \"Internal Server Error\"}\n\n"); err != nil {
-							slog.Error("Failed to send SSE error during panic", "error", err)
-						}
-					} else {
-						http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-					}
-				}
-			}()
-
-			// 2. Prepare Context
-			// Retrieve the session to ensure state (like visual_brief) is accessible
-			resp, err := sessionSvc.Get(r.Context(), &session.GetRequest{
-				AppName:   req.AppName,
-				UserID:    req.UserID,
-				SessionID: req.SessionID,
-			})
-			if err != nil {
-				slog.Error("Failed to functionality load session", "session_id", req.SessionID, "error", err)
-				http.Error(w, "Session not found", http.StatusNotFound)
-				return
-			}
-			sess := resp.Session
-			slog.Info("Session retrieved", "session_id", req.SessionID, "is_nil", sess == nil)
-			if sess == nil {
-				slog.Error("Session is nil despite no error from Get")
-				http.Error(w, "Session unavailable", http.StatusInternalServerError)
-				return
-			}
-
-			// We need to implement agent.InvocationContext to run the agent.
-
-			// We need to implement agent.InvocationContext to run the agent.
-			// Since we don't have access to the internal adkrest context logic, we'll create a minimal implementation.
-			invCtx := &SimpleInvocationContext{
-				Context:   r.Context(),
-				sessionID: req.SessionID,
-				session:   sess,
-				userContent: &genai.Content{
-					Parts: []*genai.Part{{Text: req.NewMessage.Parts[0].Text}},
-				},
-				agent: agentInstance,
-			}
-
-			// 3. Prepare Response for SSE
-			w.Header().Set("Content-Type", "text/event-stream")
-			w.Header().Set("Cache-Control", "no-cache")
-			w.Header().Set("Connection", "keep-alive")
-
-			flusher, ok := w.(http.Flusher)
-			if !ok {
-				http.Error(w, "Streaming not supported", http.StatusInternalServerError)
-				return
-			}
-
-			// 4. Run Agent and Stream Events
-			slog.Info("Starting streaming run", "session_id", req.SessionID)
-
-			// Helper to safely write events to the stream
-			var mu sync.Mutex
-			writeEvent := func(evtType string, data []byte) error {
-				mu.Lock()
-				defer mu.Unlock()
-				if _, err := fmt.Fprintf(w, "event: %s\ndata: %s\n\n", evtType, data); err != nil {
-					return err
-				}
-				headersSent = true
-				flusher.Flush()
-				return nil
-			}
-
-			// Send initial heartbeat
-			mu.Lock()
-			if _, err := fmt.Fprintf(w, ": heartbeat\n\n"); err != nil {
-				mu.Unlock()
-				slog.Error("Failed to write heartbeat", "error", err)
-				return
-			}
-			headersSent = true
-			flusher.Flush()
-			mu.Unlock()
-
-			// Create a reporter that writes to the stream
-			reporter := func(message string, _ ...interface{}) {
-				slog.Info("Status update", "message", message)
-				payload, _ := json.Marshal(map[string]string{"message": message})
-				if err := writeEvent("status", payload); err != nil {
-					slog.Warn("Failed to write status event", "error", err)
-				}
-			}
-
-			// Inject reporter into context
-			ctxWithReporter := observability.WithStatusReporter(invCtx.Context, reporter)
-			invCtx.Context = ctxWithReporter
-
-			for event, err := range agentInstance.Run(invCtx) {
-				if err != nil {
-					slog.Error("Error during agent run", "error", err)
-					// Send error event
-					payload, _ := json.Marshal(map[string]string{"error": err.Error()})
-					if err := writeEvent("error", payload); err != nil {
-						slog.Error("Failed to write error event", "error", err)
-						return
-					}
-					return
-				}
-
-				// Serialize event to JSON
-				data, err := json.Marshal(event)
-				if err != nil {
-					slog.Warn("Failed to marshal event", "error", err)
-					continue
-				}
-
-				// Write standard ADK event
-				mu.Lock()
-				if _, err := fmt.Fprintf(w, "data: %s\n\n", data); err != nil {
-					mu.Unlock()
-					slog.Error("Failed to write data event", "error", err)
-					return
-				}
-				flusher.Flush()
-				mu.Unlock()
-			}
-
-			// Send done event
-			if err := writeEvent("done", []byte("{}")); err != nil {
-				slog.Error("Failed to write done event", "error", err)
-				return
-			}
-			return
-		}
-
 		// Fallback to ADK API handler
 		handler.ServeHTTP(w, r)
 	})
@@ -341,23 +157,3 @@ func main() {
 		log.Fatal(err)
 	}
 }
-
-// SimpleInvocationContext implements agent.InvocationContext for streaming
-type SimpleInvocationContext struct {
-	context.Context
-	sessionID   string
-	session     session.Session
-	userContent *genai.Content
-	agent       agent.Agent
-}
-
-func (s *SimpleInvocationContext) Session() session.Session    { return s.session }
-func (s *SimpleInvocationContext) RunConfig() *agent.RunConfig { return &agent.RunConfig{} }
-func (s *SimpleInvocationContext) InvocationID() string        { return "stream-" + s.sessionID }
-func (s *SimpleInvocationContext) Memory() agent.Memory        { return nil } // Memory service might be needed if agent uses it
-func (s *SimpleInvocationContext) Artifacts() agent.Artifacts  { return nil }
-func (s *SimpleInvocationContext) UserContent() *genai.Content { return s.userContent }
-func (s *SimpleInvocationContext) EndInvocation()              {}
-func (s *SimpleInvocationContext) Ended() bool                 { return false }
-func (s *SimpleInvocationContext) Agent() agent.Agent          { return s.agent }
-func (s *SimpleInvocationContext) Branch() string              { return "" }
