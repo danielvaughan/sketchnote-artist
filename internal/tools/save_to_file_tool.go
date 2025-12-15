@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log/slog"
 	"path/filepath"
+	"strings"
+	"time"
 
 	"github.com/danielvaughan/sketchnote-artist/internal/storage"
 	"google.golang.org/adk/tool"
@@ -24,6 +26,14 @@ func NewFileSaver(store storage.Store, folder string) (tool.Tool, error) {
 			// Sanitize filename to prevent directory traversal
 			filename := filepath.Base(args.Filename)
 			content := args.Content
+
+			// Check if file exists and append timestamp if needed to avoid 403 on overwrite
+			exists, err := store.Exists(ctx, folder, filename)
+			if err == nil && exists {
+				ext := filepath.Ext(filename)
+				name := strings.TrimSuffix(filename, ext)
+				filename = fmt.Sprintf("%s_%d%s", name, time.Now().UnixNano(), ext)
+			}
 
 			slog.Info("Saving content to file", "folder", folder, "filename", filename)
 
