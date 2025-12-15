@@ -8,6 +8,10 @@ import (
 	"net/http"
 	"os"
 
+	// The 'time' import is not duplicated in the provided code.
+	// If there was a duplicate, it would be removed here.
+	"time"
+
 	"google.golang.org/adk/agent"
 	"google.golang.org/adk/artifact"
 	"google.golang.org/adk/cmd/launcher"
@@ -125,7 +129,11 @@ func main() {
 				http.Error(w, "Failed to retrieve image", http.StatusInternalServerError)
 				return
 			}
-			defer reader.Close()
+			defer func() {
+				if err := reader.Close(); err != nil {
+					slog.Error("Failed to close image reader", "error", err)
+				}
+			}()
 
 			// Basic Content-Type sniffing or default to png
 			// Since we know these are generated as PNGs usually:
@@ -140,7 +148,13 @@ func main() {
 		handler.ServeHTTP(w, r)
 	})
 
-	if err := http.ListenAndServe(":"+port, finalHandler); err != nil {
+	server := &http.Server{
+		Addr:              ":" + port,
+		Handler:           finalHandler,
+		ReadHeaderTimeout: 3 * time.Second,
+	}
+
+	if err := server.ListenAndServe(); err != nil {
 		log.Fatal(err)
 	}
 }

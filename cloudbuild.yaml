@@ -1,11 +1,14 @@
 steps:
-  # Build the container image
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/sketchnote-artist:$COMMIT_SHA', '.']
+  # Run Linting
+  - name: 'golangci/golangci-lint:v2.7.2'
+    args: ['golangci-lint', 'run', '--timeout=5m', '--verbose']
 
-  # Push the container image to Artifact Registry
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/sketchnote-artist:$COMMIT_SHA']
+  # Build and Push using Kaniko for layer caching and faster builds
+  - name: 'gcr.io/kaniko-project/executor:latest'
+    args:
+      - '--destination=$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/sketchnote-artist:$COMMIT_SHA'
+      - '--cache=true'
+      - '--cache-ttl=24h'
 
   # Deploy container image to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
@@ -18,9 +21,6 @@ steps:
       - '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/sketchnote-artist:$COMMIT_SHA'
       - '--region'
       - '$_REGION'
-
-images:
-  - '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/sketchnote-artist:$COMMIT_SHA'
 
 substitutions:
   _REGION: us-central1

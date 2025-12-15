@@ -39,9 +39,6 @@ variable "google_api_key" {
   sensitive   = true
 }
 
-
-
-
 variable "github_repository_id" {
   description = "The Cloud Build Repository ID (usually owner-repo)"
   type        = string

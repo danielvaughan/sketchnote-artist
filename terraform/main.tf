@@ -3,11 +3,11 @@ terraform {
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = "~> 5.0"
+      version = "~> 6.0"
     }
     google-beta = {
       source  = "hashicorp/google-beta"
-      version = "~> 5.0"
+      version = "~> 6.0"
     }
   }
 }
@@ -40,5 +40,20 @@ resource "google_project_service" "compute_api" {
 
 resource "google_project_service" "iap_api" {
   service            = "iap.googleapis.com"
+  disable_on_destroy = false
+}
+
+resource "google_project_service" "storage_api" {
+  service            = "storage.googleapis.com"
+  disable_on_destroy = false
+}
+
+resource "google_project_service" "iam_api" {
+  service            = "iam.googleapis.com"
+  disable_on_destroy = false
+}
+
+resource "google_project_service" "container_scanning_api" {
+  service            = "containerscanning.googleapis.com"
   disable_on_destroy = false
 }

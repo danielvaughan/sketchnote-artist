@@ -3,6 +3,7 @@ package tools
 import (
 	"fmt"
 	"log/slog"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -25,7 +26,8 @@ func NewImageGenerationTool(client *genai.Client, store storage.Store, folder st
 			Filename string `json:"filename" doc:"The desired filename for the generated image (e.g., visual_brief.png)."`
 		}) (string, error) {
 			prompt := args.Prompt
-			filename := args.Filename
+			// Sanitize filename to prevent directory traversal
+			filename := filepath.Base(args.Filename)
 			observability.Report(ctx, fmt.Sprintf("\n%s The Artist is sketching...", "🎨"))
 			slog.Info("Generating image", "filename", filename)
 
@@ -44,7 +46,7 @@ func NewImageGenerationTool(client *genai.Client, store storage.Store, folder st
 						exists, err := store.Exists(ctx, folder, filename)
 						if err == nil && exists {
 							// If file exists, append timestamp before extension
-							ext := ".png"
+							var ext string
 							if strings.Contains(filename, ".") {
 								// Simple extension check/split might be safer
 								// For now assume .png as per previous code context or just simple append

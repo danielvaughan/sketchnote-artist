@@ -20,12 +20,16 @@ func main() {
 	ctx := context.Background()
 
 	// Initialize structured logging to file
-	logFile, err := os.OpenFile("sketchnote-artist.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	logFile, err := os.OpenFile("sketchnote-artist.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
 	if err != nil {
 		slog.Error("Failed to open log file", "error", err)
 		os.Exit(1)
 	}
-	defer logFile.Close()
+	defer func() {
+		if err := logFile.Close(); err != nil {
+			slog.Error("Failed to close log file", "error", err)
+		}
+	}()
 
 	logger := slog.New(slog.NewTextHandler(logFile, nil))
 	slog.SetDefault(logger)

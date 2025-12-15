@@ -170,3 +170,16 @@ function resetUI() {
   statusMsg.innerText = "Ready to create...";
   statusMsg.style.color = "var(--text-secondary)";
 }
+
+// Enable Enter key submission
+document.addEventListener('DOMContentLoaded', () => {
+  const urlInput = document.getElementById('youtubeUrl');
+  if (urlInput) {
+    urlInput.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        generateSketchnote();
+      }
+    });
+  }
+});
