@@ -18,9 +18,6 @@ steps:
       - '--region'
       - '$_REGION'
 
-images:
-  - '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/sketchnote-artist:$COMMIT_SHA'
-
 substitutions:
   _REGION: us-central1
 

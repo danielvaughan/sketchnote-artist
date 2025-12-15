@@ -1,5 +1,8 @@
 # Sketchnote Artist Agent
 
+[![Cloud Build Status](https://storage.googleapis.com/cloud-build-badges/gcb-api/sketchnote-artist-application/triggers/deploy-dev/build-status.png)](https://console.cloud.google.com/cloud-build/triggers?project=sketchnote-artist-application)
+
+## Overview
 The **Sketchnote Artist Agent** is an intelligent CLI application that turns YouTube videos into beautiful, hand-drawn style visual summaries (sketchnotes). 
 
 Built with Go and the [Google Go Agent Development Kit (ADK)](https://github.com/google/adk-go), it demonstrates the power of sequential multi-agent workflows.
