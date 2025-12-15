@@ -6,6 +6,6 @@ resource "google_artifact_registry_repository" "repo" {
   description   = "Docker repository for Sketchnote Artist (${local.env})"
 
   vulnerability_scanning_config {
-    enablement_config = "ENABLED"
+    enablement_config = "INHERITED"
   }
 }

@@ -1,6 +1,6 @@
 # Sketchnote Artist Agent
 
-[![Cloud Build Status](https://storage.googleapis.com/cloud-build-badges/gcb-api/sketchnote-artist-application/triggers/deploy-dev/build-status.png)](https://console.cloud.google.com/cloud-build/triggers?project=sketchnote-artist-application)
+[Cloud Build Status](https://console.cloud.google.com/cloud-build/triggers?project=sketchnote-artist-application)
 
 ## Overview
 The **Sketchnote Artist Agent** is an intelligent CLI application that turns YouTube videos into beautiful, hand-drawn style visual summaries (sketchnotes). 
@@ -71,7 +71,7 @@ The agent will:
 
 ## 🧪 Testing
 
-To run the automated end-to-end UI tests:
+To run the automated end-to-end tests (verified against the deployed `dev` environment):
 
 1.  **Install Node.js dependencies:**
     ```bash
@@ -83,11 +83,28 @@ To run the automated end-to-end UI tests:
     npx playwright install --with-deps
     ```
 
-3.  **Run the tests:**
+3.  **Set the Service URL:**
+    Retrieve the URL from Terraform outputs:
     ```bash
-    npx playwright test
+    export SERVICE_URL=$(cd terraform && terraform output -raw service_url)
     ```
-    This will automatically start the backend server and run the browser tests against it.
+
+4.  **Run the Tests:**
+
+    *   **UI Test** (Simulates user interaction in the browser):
+        ```bash
+        npx playwright test e2e/sketchnote.spec.ts
+        ```
+
+    *   **API Test** (Directly calls REST endpoints):
+        ```bash
+        npx playwright test e2e/api.spec.ts
+        ```
+
+    *   **Run All Tests:**
+        ```bash
+        npx playwright test
+        ```
 
 ## 🖼️ Example Output
 

@@ -65,7 +65,6 @@ func NewImageGenerationTool(client *genai.Client, store storage.Store, folder st
 							slog.Error("Failed to save image", "error", err)
 							return "", err
 						}
-						slog.Info("Image saved", "folder", folder, "filename", filename)
 
 						observability.Report(ctx, fmt.Sprintf("\n%s The Artist has finished! View your sketchnote here: %s", "🎨", filename))
 						return fmt.Sprintf("Image successfully saved to %s", filename), nil
