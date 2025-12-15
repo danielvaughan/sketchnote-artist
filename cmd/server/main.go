@@ -185,6 +185,13 @@ func main() {
 				return
 			}
 
+			defer func() {
+				if r := recover(); r != nil {
+					slog.Error("Panic in streaming handler", "panic", r)
+					http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+				}
+			}()
+
 			// 2. Prepare Context
 			// Retrieve the session to ensure state (like visual_brief) is accessible
 			resp, err := sessionSvc.Get(r.Context(), &session.GetRequest{
@@ -198,6 +205,14 @@ func main() {
 				return
 			}
 			sess := resp.Session
+			slog.Info("Session retrieved", "session_id", req.SessionID, "is_nil", sess == nil)
+			if sess == nil {
+				slog.Error("Session is nil despite no error from Get")
+				http.Error(w, "Session unavailable", http.StatusInternalServerError)
+				return
+			}
+
+			// We need to implement agent.InvocationContext to run the agent.
 
 			// We need to implement agent.InvocationContext to run the agent.
 			// Since we don't have access to the internal adkrest context logic, we'll create a minimal implementation.
