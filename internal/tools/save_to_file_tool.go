@@ -3,6 +3,7 @@ package tools
 import (
 	"fmt"
 	"log/slog"
+	"path/filepath"
 
 	"github.com/danielvaughan/sketchnote-artist/internal/storage"
 	"google.golang.org/adk/tool"
@@ -20,7 +21,8 @@ func NewFileSaver(store storage.Store, folder string) (tool.Tool, error) {
 			Filename string `json:"filename" doc:"The name of the file to save (e.g., visual_brief.txt)."`
 			Content  string `json:"content" doc:"The text content to write to the file."`
 		}) (string, error) {
-			filename := args.Filename
+			// Sanitize filename to prevent directory traversal
+			filename := filepath.Base(args.Filename)
 			content := args.Content
 
 			slog.Info("Saving content to file", "folder", folder, "filename", filename)
