@@ -225,6 +225,7 @@ func main() {
 				userContent: &genai.Content{
 					Parts: []*genai.Part{{Text: req.NewMessage.Parts[0].Text}},
 				},
+				agent: agentInstance,
 			}
 
 			// 3. Prepare Response for SSE
@@ -335,15 +336,16 @@ type SimpleInvocationContext struct {
 	sessionID   string
 	session     session.Session
 	userContent *genai.Content
+	agent       agent.Agent
 }
 
 func (s *SimpleInvocationContext) Session() session.Session    { return s.session }
-func (s *SimpleInvocationContext) RunConfig() *agent.RunConfig { return nil }
+func (s *SimpleInvocationContext) RunConfig() *agent.RunConfig { return &agent.RunConfig{} }
 func (s *SimpleInvocationContext) InvocationID() string        { return "stream-" + s.sessionID }
-func (s *SimpleInvocationContext) Memory() agent.Memory        { return nil }
+func (s *SimpleInvocationContext) Memory() agent.Memory        { return nil } // Memory service might be needed if agent uses it
 func (s *SimpleInvocationContext) Artifacts() agent.Artifacts  { return nil }
 func (s *SimpleInvocationContext) UserContent() *genai.Content { return s.userContent }
 func (s *SimpleInvocationContext) EndInvocation()              {}
 func (s *SimpleInvocationContext) Ended() bool                 { return false }
-func (s *SimpleInvocationContext) Agent() agent.Agent          { return nil }
+func (s *SimpleInvocationContext) Agent() agent.Agent          { return s.agent }
 func (s *SimpleInvocationContext) Branch() string              { return "" }
