@@ -12,7 +12,11 @@ linters:
     - ineffassign
     - staticcheck
     - unused
-    # - revive
+    - bodyclose     # Checks that HTTP bodies are closed
+    - noctx         # Checks that http requests have context
+    - revive        # Drop-in replacement for golint
+    - gocritic      # Provides diagnostics in Go code
+    - misspell      # Finds commonly misspelled English words
 
 formatters:
   enable:
