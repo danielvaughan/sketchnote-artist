@@ -1,4 +1,8 @@
 steps:
+  # Run Linting
+  - name: 'golangci/golangci-lint:v2.7.2'
+    args: ['golangci-lint', 'run', '--timeout=5m', '--verbose']
+
   # Build and Push using Kaniko for layer caching and faster builds
   - name: 'gcr.io/kaniko-project/executor:latest'
     args:

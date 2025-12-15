@@ -2,7 +2,6 @@ package agents
 
 import (
 	"context"
-	"iter"
 	"strings"
 	"testing"
 
@@ -50,22 +49,6 @@ func (m *mockInvocationContext) EndInvocation() {}
 
 func (m *mockInvocationContext) Ended() bool {
 	return false
-}
-
-// mockAgent implements agent.Agent for testing
-type mockAgent struct {
-	agent.Agent
-}
-
-func (m *mockAgent) Run(ctx agent.InvocationContext) iter.Seq2[*session.Event, error] {
-	return func(yield func(*session.Event, error) bool) {
-		// Mock success
-		yield(nil, nil)
-	}
-}
-
-func (m *mockAgent) Name() string {
-	return "MockAgent"
 }
 
 func TestValidateYouTubeURL(t *testing.T) {
@@ -143,8 +126,8 @@ func TestCurator_Run_GracefulFailure(t *testing.T) {
 	found := false
 	expected := "I can't process that. Please provide a valid YouTube URL"
 	for _, e := range events {
-		if e.LLMResponse.Content != nil && len(e.LLMResponse.Content.Parts) > 0 {
-			text := e.LLMResponse.Content.Parts[0].Text
+		if e.Content != nil && len(e.Content.Parts) > 0 {
+			text := e.Content.Parts[0].Text
 			if strings.Contains(text, expected) {
 				found = true
 				break

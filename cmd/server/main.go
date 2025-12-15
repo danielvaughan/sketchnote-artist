@@ -125,7 +125,11 @@ func main() {
 				http.Error(w, "Failed to retrieve image", http.StatusInternalServerError)
 				return
 			}
-			defer reader.Close()
+			defer func() {
+				if err := reader.Close(); err != nil {
+					slog.Error("Failed to close image reader", "error", err)
+				}
+			}()
 
 			// Basic Content-Type sniffing or default to png
 			// Since we know these are generated as PNGs usually:

@@ -46,7 +46,7 @@ func NewImageGenerationTool(client *genai.Client, store storage.Store, folder st
 						exists, err := store.Exists(ctx, folder, filename)
 						if err == nil && exists {
 							// If file exists, append timestamp before extension
-							ext := ".png"
+							var ext string
 							if strings.Contains(filename, ".") {
 								// Simple extension check/split might be safer
 								// For now assume .png as per previous code context or just simple append
