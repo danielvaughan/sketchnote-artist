@@ -78,10 +78,13 @@ func main() {
 	}
 	slog.Info("Agent created successfully")
 
+	// Initialize services
+	sessionSvc := session.InMemoryService()
+
 	// Configure the launcher with in-memory services
 	config := &launcher.Config{
 		AgentLoader:     agent.NewSingleLoader(agentInstance),
-		SessionService:  session.InMemoryService(),
+		SessionService:  sessionSvc,
 		ArtifactService: artifact.InMemoryService(),
 		MemoryService:   memory.InMemoryService(),
 	}
@@ -180,11 +183,21 @@ func main() {
 			}
 
 			// 2. Prepare Context
+			// Retrieve the session to ensure state (like visual_brief) is accessible
+			resp, err := sessionSvc.Get(r.Context(), &session.GetRequest{SessionID: req.SessionID})
+			if err != nil {
+				slog.Error("Failed to functionality load session", "session_id", req.SessionID, "error", err)
+				http.Error(w, "Session not found", http.StatusNotFound)
+				return
+			}
+			sess := resp.Session
+
 			// We need to implement agent.InvocationContext to run the agent.
 			// Since we don't have access to the internal adkrest context logic, we'll create a minimal implementation.
 			invCtx := &SimpleInvocationContext{
 				Context:   r.Context(),
 				sessionID: req.SessionID,
+				session:   sess,
 				userContent: &genai.Content{
 					Parts: []*genai.Part{{Text: req.NewMessage.Parts[0].Text}},
 				},
@@ -266,10 +279,11 @@ func main() {
 type SimpleInvocationContext struct {
 	context.Context
 	sessionID   string
+	session     session.Session
 	userContent *genai.Content
 }
 
-func (s *SimpleInvocationContext) Session() session.Session    { return nil } // Not used by Sequential Agent directly for flow control usually
+func (s *SimpleInvocationContext) Session() session.Session    { return s.session }
 func (s *SimpleInvocationContext) RunConfig() *agent.RunConfig { return nil }
 func (s *SimpleInvocationContext) InvocationID() string        { return "stream-" + s.sessionID }
 func (s *SimpleInvocationContext) Memory() agent.Memory        { return nil }
