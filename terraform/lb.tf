@@ -30,7 +30,7 @@ resource "google_compute_backend_service" "default" {
   name        = "sketchnote-backend-${local.env}"
   port_name   = "http"
   protocol    = "HTTPS"
-  timeout_sec = 30
+  timeout_sec = 300
 
   backend {
     group = google_compute_region_network_endpoint_group.serverless_neg[0].id

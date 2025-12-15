@@ -4,6 +4,7 @@ resource "google_cloud_run_v2_service" "default" {
   ingress  = local.is_prod ? "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER" : "INGRESS_TRAFFIC_ALL"
 
   template {
+    timeout = "300s"
     containers {
       image = "${var.region}-docker.pkg.dev/${var.project_id}/sketchnote-repo-${local.env}/sketchnote-artist:${var.image_tag}"
       ports {
