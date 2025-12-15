@@ -29,7 +29,10 @@ func NewFileSaver(store storage.Store, folder string) (tool.Tool, error) {
 
 			// Check if file exists and append timestamp if needed to avoid 403 on overwrite
 			exists, err := store.Exists(ctx, folder, filename)
-			if err == nil && exists {
+			if err != nil {
+				return "", fmt.Errorf("failed to check for file existence: %w", err)
+			}
+			if exists {
 				ext := filepath.Ext(filename)
 				name := strings.TrimSuffix(filename, ext)
 				filename = fmt.Sprintf("%s_%d%s", name, time.Now().UnixNano(), ext)
