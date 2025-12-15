@@ -188,10 +188,19 @@ func main() {
 				return
 			}
 
+			var headersSent bool
 			defer func() {
 				if r := recover(); r != nil {
 					slog.Error("Panic in streaming handler", "panic", r)
-					http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+					if headersSent {
+						// Attempt to write SSE error event
+						// We ignore errors here as the connection might be broken
+						if _, err := fmt.Fprintf(w, "event: error\ndata: {\"error\": \"Internal Server Error\"}\n\n"); err != nil {
+							slog.Error("Failed to send SSE error during panic", "error", err)
+						}
+					} else {
+						http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+					}
 				}
 			}()
 
@@ -251,6 +260,7 @@ func main() {
 				if _, err := fmt.Fprintf(w, "event: %s\ndata: %s\n\n", evtType, data); err != nil {
 					return err
 				}
+				headersSent = true
 				flusher.Flush()
 				return nil
 			}
@@ -262,6 +272,7 @@ func main() {
 				slog.Error("Failed to write heartbeat", "error", err)
 				return
 			}
+			headersSent = true
 			flusher.Flush()
 			mu.Unlock()
 
