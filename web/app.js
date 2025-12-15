@@ -175,8 +175,9 @@ function resetUI() {
 document.addEventListener('DOMContentLoaded', () => {
   const urlInput = document.getElementById('youtubeUrl');
   if (urlInput) {
-    urlInput.addEventListener('keypress', function (e) {
+    urlInput.addEventListener('keydown', function (e) {
       if (e.key === 'Enter') {
+        e.preventDefault();
         generateSketchnote();
       }
     });

@@ -8,6 +8,10 @@ import (
 	"net/http"
 	"os"
 
+	// The 'time' import is not duplicated in the provided code.
+	// If there was a duplicate, it would be removed here.
+	"time"
+
 	"google.golang.org/adk/agent"
 	"google.golang.org/adk/artifact"
 	"google.golang.org/adk/cmd/launcher"
@@ -144,7 +148,13 @@ func main() {
 		handler.ServeHTTP(w, r)
 	})
 
-	if err := http.ListenAndServe(":"+port, finalHandler); err != nil {
+	server := &http.Server{
+		Addr:              ":" + port,
+		Handler:           finalHandler,
+		ReadHeaderTimeout: 3 * time.Second,
+	}
+
+	if err := server.ListenAndServe(); err != nil {
 		log.Fatal(err)
 	}
 }

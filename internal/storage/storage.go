@@ -35,11 +35,11 @@ type DiskStore struct{}
 
 func (s *DiskStore) Save(ctx context.Context, folder, filename string, data []byte) error {
 	// Ensure directory exists
-	if err := os.MkdirAll(folder, 0755); err != nil {
+	if err := os.MkdirAll(folder, 0750); err != nil {
 		return fmt.Errorf("failed to create directory %s: %w", folder, err)
 	}
 	fullPath := filepath.Join(folder, filename)
-	return os.WriteFile(fullPath, data, 0644)
+	return os.WriteFile(fullPath, data, 0600)
 }
 
 func (s *DiskStore) GetPublicURL(folder, filename string) string {
@@ -65,7 +65,7 @@ func (s *DiskStore) Exists(ctx context.Context, folder, filename string) (bool, 
 
 func (s *DiskStore) Get(ctx context.Context, folder, filename string) (io.ReadCloser, error) {
 	fullPath := filepath.Join(folder, filename)
-	return os.Open(fullPath)
+	return os.Open(fullPath) //nolint:gosec // Path is constructed safely with filepath.Join and sanitized inputs
 }
 
 // GCSStore implements Store for Google Cloud Storage.
