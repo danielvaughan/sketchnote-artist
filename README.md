@@ -84,10 +84,16 @@ To run the automated end-to-end tests (verified against the deployed `dev` envir
     ```
 
 3.  **Set the Service URL:**
-    Retrieve the URL from Terraform outputs:
-    ```bash
-    export SERVICE_URL=$(cd terraform && terraform output -raw service_url)
-    ```
+    
+    *   **For Local Testing:**
+        ```bash
+        export SERVICE_URL=http://localhost:8080
+        ```
+    *   **For Deployed Environment:**
+        Retrieve the URL from Terraform outputs:
+        ```bash
+        export SERVICE_URL=$(cd terraform && terraform output -raw service_url)
+        ```
 
 4.  **Run the Tests:**
 
