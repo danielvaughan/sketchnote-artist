@@ -10,6 +10,12 @@ resource "google_cloud_run_v2_service" "default" {
       ports {
         container_port = 8080
       }
+      resources {
+        limits = {
+          cpu    = "2"
+          memory = "2Gi"
+        }
+      }
       env {
         name  = "GOOGLE_API_KEY"
         value = var.google_api_key
@@ -49,3 +55,11 @@ resource "google_storage_bucket_iam_member" "run_sa_images_creator" {
 }
 
 
+
+resource "google_cloud_run_v2_service_iam_member" "noauth" {
+  count    = local.is_prod ? 0 : 1
+  location = google_cloud_run_v2_service.default.location
+  name     = google_cloud_run_v2_service.default.name
+  role     = "roles/run.invoker"
+  member   = "allUsers"
+}

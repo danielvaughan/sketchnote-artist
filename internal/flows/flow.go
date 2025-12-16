@@ -1,3 +1,4 @@
+// Package flows defines the workflow logic for the Sketchnote Artist.
 package flows
 
 import (

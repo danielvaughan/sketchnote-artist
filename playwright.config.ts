@@ -1,14 +1,14 @@
 import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
-  testDir: './tests',
+  testDir: './e2e',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
+  timeout: 300 * 1000,
   use: {
-    baseURL: 'http://localhost:8080',
     trace: 'on-first-retry',
   },
   projects: [
@@ -17,7 +17,7 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
   ],
-  webServer: {
+  /* webServer: {
     command: 'go run cmd/server/main.go',
     url: 'http://localhost:8080',
     reuseExistingServer: !process.env.CI,
@@ -25,5 +25,5 @@ export default defineConfig({
     env: {
       PORT: '8080'
     }
-  },
+  }, */
 });

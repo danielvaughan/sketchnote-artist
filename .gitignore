@@ -1,6 +1,8 @@
 # Binaries for the current project
 /sketchnote-artist
+/main
 /generated_result*.png
+images/
 
 # Environment variables
 .env

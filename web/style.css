@@ -12,6 +12,7 @@
   --font-family: 'Roboto', Arial, sans-serif;
   --radius-pill: 24px;
   --radius-card: 12px;
+  --player-bg: #000000;
 }
 
 body {
@@ -35,19 +36,21 @@ body {
 /* Layout */
 .centered-layout {
   width: 100%;
-  max-width: 900px;
-  padding: 2rem;
+  max-width: 1400px;
+  /* Increased max-width for dual player */
+  padding: 1rem 2rem;
+  /* Reduced top/bottom padding */
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2.5rem;
-  /* Increased gap for tidier spacing */
+  gap: 1.5rem;
+  /* Reduced gap */
 }
 
 /* Header */
 .minimal-header {
-  margin-top: 3rem;
-  /* More breathing room at top */
+  margin-top: 1rem;
+  /* Reduced top margin */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -157,11 +160,36 @@ body {
   font-weight: 500;
 }
 
-/* Player / Result Container */
+/* Display Stage (Grid Layout) */
+.display-stage {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .display-stage {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Video Player Container (Left Pane) */
+.video-player-container {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background-color: var(--player-bg);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Sketchnote Result Container (Right Pane) */
 .player-container {
   width: 100%;
   aspect-ratio: 16 / 9;
-  background-color: #000;
+  background-color: var(--player-bg);
   /* Keep player black for contrast */
   border-radius: var(--radius-card);
   overflow: hidden;
@@ -232,7 +260,7 @@ body {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  background-color: #000;
+  background-color: var(--player-bg);
 }
 
 /* Result Actions Overlay */

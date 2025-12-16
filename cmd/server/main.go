@@ -1,3 +1,4 @@
+// Package main is the entry point for the Sketchnote Artist server.
 package main
 
 import (
@@ -8,8 +9,6 @@ import (
 	"net/http"
 	"os"
 
-	// The 'time' import is not duplicated in the provided code.
-	// If there was a duplicate, it would be removed here.
 	"time"
 
 	"google.golang.org/adk/agent"

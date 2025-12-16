@@ -1,10 +1,10 @@
 const API_BASE = window.location.origin;
+const APP_NAME = "sketchnote-artist";
+const USER_ID = "web-guest";
 
 async function generateSketchnote() {
   const urlInput = document.getElementById('youtubeUrl');
   const generateBtn = document.getElementById('generateBtn');
-  const btnIcon = generateBtn.querySelector('.material-icons');
-
 
   const idleState = document.getElementById('idleState');
   const progressSection = document.getElementById('progressSection');
@@ -15,109 +15,192 @@ async function generateSketchnote() {
   const videoUrl = urlInput.value.trim();
 
   if (!videoUrl) {
-    statusMsg.innerText = "Please enter a valid YouTube URL.";
-    statusMsg.style.color = "#FF0000";
+    alert("Please enter a valid YouTube URL");
     return;
   }
 
-  // 1. UI Transition to Processing
+  // Reset UI State
+  const displayStage = document.getElementById('displayStage');
+  displayStage.classList.remove('hidden');
+
   idleState.classList.add('hidden');
   resultSection.classList.add('hidden');
   progressSection.classList.remove('hidden');
-
-  // Button State
+  statusMsg.innerText = "Initializing...";
+  statusMsg.style.color = "var(--text-secondary)";
   generateBtn.disabled = true;
 
+  // Handle Video Player
+  const videoId = extractVideoID(videoUrl);
+  if (videoId) {
+    const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&origin=${window.location.origin}`;
+    document.getElementById('youtubeEmbed').src = embedUrl;
+    document.getElementById('videoPlayerContainer').classList.remove('hidden');
+  }
 
-  statusMsg.innerText = "Starting engine...";
-  statusMsg.style.color = "var(--text-secondary)";
+  // Track duration for debugging timeouts
+  const startTime = Date.now();
 
   try {
-    // 2. Create Session
-    statusMsg.innerText = "Connecting to agent...";
-    const sessionRes = await fetch(`${API_BASE}/apps/sketchnote-artist/users/web-guest/sessions`, {
+    // 1. Create Session
+    const sessionResp = await fetch(`/apps/${APP_NAME}/users/${USER_ID}/sessions`, {
       method: 'POST'
     });
 
-    if (!sessionRes.ok) throw new Error(`Failed to create session: ${sessionRes.statusText}`);
-
-    const sessionData = await sessionRes.json();
+    if (!sessionResp.ok) throw new Error("Failed to create session");
+    const sessionData = await sessionResp.json();
     const sessionId = sessionData.id;
-    console.log(`Session created: ${sessionId}`);
 
-    // 3. Run Agent (Long Polling / Wait)
-    statusMsg.innerText = "Watching video & sketching...";
+    // 2. Start Streaming Request
+    statusMsg.innerText = "Connecting to agent...";
 
-    // Simulating "steps" by updating text occasionally if it takes too long? 
-    // For now, keep it simple as requested.
-
-    const runRes = await fetch(`${API_BASE}/run`, {
+    const response = await fetch('/run_sse', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        appName: "sketchnote-artist",
-        userId: "web-guest",
+        appName: APP_NAME,
+        userId: USER_ID,
         sessionId: sessionId,
         newMessage: {
           role: "user",
           parts: [{ text: videoUrl }]
-        }
+        },
+        streaming: true
       })
     });
 
-    if (!runRes.ok) throw new Error("Agent execution failed");
+    if (!response.ok) throw new Error(`Stream failed: ${response.statusText}`);
 
-    const runData = await runRes.json();
-    console.log("Agent response:", runData);
+    // 3. Read the Stream
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
 
-    // 4. Extract Filename
-    let filename = null;
-    const responseText = JSON.stringify(runData); // Naive, but usually works for finding the filename in the JSON dump if structure varies
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
 
-    // Regex from previous version
-    const match = responseText.match(/(?:generated the sketchnote: |filename: |save it as |saved to )["']?([^"'\s,]+?\.(?:png|jpg|jpeg|webp))["']?/i);
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n\n');
+      buffer = lines.pop(); // Keep incomplete chunk
 
-    if (match && match[1]) {
-      filename = match[1].trim();
-      if (filename.endsWith('.')) filename = filename.slice(0, -1);
-    } else {
-      const fallback = responseText.match(/([a-zA-Z0-9_\-]+\.(?:png|jpg|webp))/);
-      if (fallback) filename = fallback[0];
-    }
+      for (const line of lines) {
+        if (line.startsWith(':')) continue; // Ignore comments/heartbeats
+        if (line.startsWith('event: done')) return; // Success!
+        if (line.startsWith('event: error')) {
+          // Locate data extraction more robustly
+          const jsonStart = line.indexOf('{');
+          if (jsonStart !== -1) {
+            const data = JSON.parse(line.substring(jsonStart));
+            throw new Error(data.error || "Unknown stream error");
+          }
+        }
 
-    if (!filename) throw new Error("Could not find generated image filename.");
+        // Handle explicit status events from observability
+        if (line.startsWith('event: status')) {
+          const jsonStart = line.indexOf('{');
+          if (jsonStart !== -1) {
+            try {
+              const data = JSON.parse(line.substring(jsonStart));
+              if (data.message) {
+                statusMsg.innerText = data.message;
+              }
+            } catch (e) {
+              console.warn("Failed to parse status event", e);
+            }
+          }
+          continue; // Skip trying to parse as 'data: '
+        }
 
-    // 5. Show Result
-    // Add small delay to ensure FS write? (Usually immediate if response came back)
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    const imagePath = `${API_BASE}/images/${filename}`;
-
-    // Validate image fetch before showing
-    try {
-      const imgCheck = await fetch(imagePath);
-      if (!imgCheck.ok) {
-        throw new Error(`Failed to fetch image: ${filename} (Status: ${imgCheck.status})`);
+        if (line.startsWith('data: ')) {
+          const jsonStr = line.substring(6);
+          try {
+            const event = JSON.parse(jsonStr);
+            handleAgentEvent(event, statusMsg, resultImage, progressSection, resultSection);
+          } catch (e) {
+            console.warn("Failed to parse event", e);
+          }
+        }
       }
-    } catch (e) {
-      throw new Error(`Failed to load image '${filename}': ${e.message}`);
     }
-
-    resultImage.src = imagePath;
-
-    progressSection.classList.add('hidden');
-    resultSection.classList.remove('hidden');
-    statusMsg.innerText = "Sketchnote created successfully!";
 
   } catch (error) {
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
     console.error(error);
-    statusMsg.innerText = `Error: ${error.message}`;
+
+    // Check for "Failed to fetch" which usually means network error/timeout
+    if (error.message === "Failed to fetch") {
+      statusMsg.innerText = `Network Error: Failed to reach server (${elapsed}s). Check connection or VPN.`;
+    } else {
+      statusMsg.innerText = `Error: ${error.message} (${elapsed}s)`;
+    }
+
     statusMsg.style.color = "#FF0000";
     progressSection.classList.add('hidden');
-    idleState.classList.remove('hidden'); // Go back to idle on error
+    idleState.classList.remove('hidden');
   } finally {
     generateBtn.disabled = false;
+  }
+}
 
+function handleAgentEvent(event, statusMsg, resultImage, progressSection, resultSection) {
+  // Debug: Log every event to inspect structure
+  console.log("Received Event:", event);
+
+  // 1. Model Call (Thinking) - Check for ADK 'modelCall' structure
+  if (event.models && event.models.length > 0) {
+    statusMsg.innerText = "Curator is analyzing video...";
+  }
+
+  // Check content parts for Tool Calls and Text
+  if (event.content && event.content.parts) {
+    for (const part of event.content.parts) {
+
+      // 2. Tool Call (Summarizing/Sketching)
+      if (part.functionCall) {
+        const toolName = part.functionCall.name;
+        console.log("Tool Call Detected:", toolName);
+
+        if (toolName.includes('summarize')) {
+          statusMsg.innerText = "Summarizing video content...";
+        } else if (toolName.includes('generate_image')) {
+          statusMsg.innerText = "Artist is sketching...";
+        }
+      }
+
+      // 3. Model Response (Final Output or Thinking Text)
+      if (part.text) {
+        console.log("Model Text:", part.text);
+
+        // Ensure we don't overwrite specific status messages with generic text unless it's substantial
+        // But for now, let's keep it simple and just look for the image
+
+        if (part.text.includes('.png')) {
+          // Found image path!
+          const filename = part.text.trim();
+          const match = filename.match(/[\w-]+\.png/);
+          if (match) {
+            const cleanFilename = match[0];
+            const imagePath = `/images/${cleanFilename}`;
+            console.log("Loading Image:", imagePath);
+
+            // Preload image to ensure it's ready
+            const img = new Image();
+            img.onload = () => {
+              resultImage.src = imagePath;
+              progressSection.classList.add('hidden');
+              resultSection.classList.remove('hidden');
+              statusMsg.innerText = "Sketchnote created successfully!";
+            };
+            img.onerror = () => {
+              console.error("Failed to load image:", imagePath);
+              statusMsg.innerText = "Image generated but failed to load.";
+            };
+            img.src = imagePath;
+          }
+        }
+      }
+    }
   }
 }
 
@@ -161,14 +244,25 @@ function resetUI() {
   const progressSection = document.getElementById('progressSection');
   const idleState = document.getElementById('idleState');
   const statusMsg = document.getElementById('statusMessage');
+  const videoPlayerContainer = document.getElementById('videoPlayerContainer');
+  const displayStage = document.getElementById('displayStage');
 
   urlInput.value = "";
   resultSection.classList.add('hidden');
   progressSection.classList.add('hidden');
+  videoPlayerContainer.classList.add('hidden');
+  displayStage.classList.add('hidden'); // Hide the entire stage
+  youtubeEmbed.src = ""; // Stop video
   idleState.classList.remove('hidden');
 
   statusMsg.innerText = "Ready to create...";
   statusMsg.style.color = "var(--text-secondary)";
+}
+
+function extractVideoID(url) {
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[2].length === 11) ? match[2] : null;
 }
 
 // Enable Enter key submission

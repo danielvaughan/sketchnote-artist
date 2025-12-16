@@ -1,3 +1,4 @@
+// Package observability provides tools for reporting agent status and metrics.
 package observability
 
 import (

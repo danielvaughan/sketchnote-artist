@@ -26,31 +26,48 @@ This document specifies the UI design for Sketchnote Artist. The design philosop
 
 The layout is a clean, single-column view centered on the screen. No sidebars, no complex headers.
 
-### 1. Header (Minimal)
-- **Content**: App Logo/Title ("Sketchnote Artist").
-- **Style**: Centered or Top-Left. Clean, unobtrusive.
+## Component Specifications
 
-### 2. Main Action Area (Centered)
-- **Input**: A prominent, aesthetically pleasing input field for the YouTube URL.
-    -   Style: Dark gray background (`#272727`), rounded corners (pill-shaped), subtle border.
-    -   Placeholder: "Paste YouTube Link..."
-- **Action Button**:
-    -   Style: Simple icon or distinct button next to or inside the input.
-    -   Color: Accent Red or White on dark.
+### 1. Main Layout (`.centered-layout`)
+-   **Width**: Max `900px`, centered.
+-   **Padding**: `2rem`.
+-   **Gap**: `2.5rem` between elements.
 
-### 3. Display Stage
-- **Container**: A dedicated area to display the result.
-- **State: Idle**: Hidden or shows a subtle tagline/illustration.
-- **State: Processing**:
-    -   Visual feedback indicating activity (e.g., a pulsating glow, a simple progress bar, or a loading skeleton).
-    -   Text feedback: "Watching video...", "Sketching..."
-- **State: Result**:
-    -   The generated Sketchnote image displayed beautifully.
-    -   Rounded corners on the image.
-    -   **Actions**: Simple "Download" (Icon) and "Close/Reset" (Icon) buttons floating or positioned neatly below.
+### 2. Header (`.minimal-header`)
+-   **Logo**: Material Icon `gesture` (Size `2.5rem`, Color `#FF0000`).
+-   **Title**: "Sketchnote Artist" (Size `1.75rem`, Bold 700, Tracking `-0.5px`).
 
-## Functional Requirements
--   **No Menus**: No hamburger menus, no user profile icons, no notification bells.
--   **No "Fake" Buttons**: Do not include "Subscribe", "Like", "Dislike" unless they perform a real function within *this* app (which they don't).
--   **Focus**: All visual weight should be on the Input (start) and the Image (end).
+### 3. Input Section (`.input-section`)
+-   **Width**: Max `640px`.
+-   **Field** (`.search-box`):
+    -   Background: `#FFFFFF`.
+    -   Border Radius: `24px` (Pill).
+    -   Shadow: `0 1px 4px rgba(0, 0, 0, 0.05)`.
+    -   Focus State: Blue border `#1C62B9`.
+-   **Button** (`#generateBtn`):
+    -   Size: `48x48px` Circle.
+    -   Background: `#F0F0F0` (Hover: `#E5E5E5`).
+
+### 4. Player Container (`.player-container`)
+-   **Aspect Ratio**: 16:9.
+-   **Background**: Black `#000` (High contrast).
+-   **Border Radius**: `12px` (Card).
+-   **Shadow**: `0 4px 12px rgba(0, 0, 0, 0.15)`.
+
+### 5. States
+1.  **Idle** (`#idleState`): Shows large `smart_display` icon.
+2.  **Progress** (`#progressSection`):
+    -   Spinner: `48px`, Top border Red `#FF0000`.
+    -   Text: "Watching video...", "Summarizing...", "Sketching...".
+3.  **Result** (`#resultSection`):
+    -   Image: Contains `img` tag (object-fit: contain).
+    -   **Actions Overlay** (`.result-actions`):
+        -   Position: Bottom Right (`24px`).
+        -   Buttons: Download, Close, Share (White circle `44px`, Backdrop Blur).
+        -   Interaction: Fade in on hover.
+
+## Technical Implementation
+-   **Icons**: Google Material Icons.
+-   **Fonts**: Google Fonts (Roboto).
+-   **CSS Variables**: Defined in `:root` for consistency.
 
