@@ -49,6 +49,7 @@ visual-briefs/
 .terraform/
 *.tfstate
 *.tfstate.*
+*.tfplan
 crash.log
 crash.*.log
 *.tfvars

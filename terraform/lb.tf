@@ -30,7 +30,7 @@ resource "google_compute_backend_service" "default" {
   name        = "sketchnote-backend-${local.env}"
   port_name   = "http"
   protocol    = "HTTPS"
-  timeout_sec = 300
+
 
   backend {
     group = google_compute_region_network_endpoint_group.serverless_neg[0].id
@@ -43,34 +43,11 @@ resource "google_compute_backend_service" "default" {
   }
 }
 
-# Backend Bucket for Images (with CDN)
-resource "google_compute_backend_bucket" "images" {
-  count       = local.create_lb ? 1 : 0
-  name        = "sketchnote-images-bucket-${local.env}"
-  bucket_name = google_storage_bucket.images.name
-  enable_cdn  = true
-}
-
 # URL Map
 resource "google_compute_url_map" "default" {
   count           = local.create_lb ? 1 : 0
   name            = "sketchnote-url-map-${local.env}"
   default_service = google_compute_backend_service.default[0].id
-
-  host_rule {
-    hosts        = ["*"]
-    path_matcher = "allpaths"
-  }
-
-  path_matcher {
-    name            = "allpaths"
-    default_service = google_compute_backend_service.default[0].id
-
-    path_rule {
-      paths   = ["/images/*"]
-      service = google_compute_backend_bucket.images[0].id
-    }
-  }
 }
 
 # Target HTTPS Proxy

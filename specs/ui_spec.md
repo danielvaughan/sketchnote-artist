@@ -48,10 +48,22 @@ The layout is a clean, single-column view centered on the screen. No sidebars, n
     -   Size: `48x48px` Circle.
     -   Background: `#F0F0F0` (Hover: `#E5E5E5`).
 
-### 4. Player Container (`.player-container`)
+### 4. Display Stage (`.display-stage`)
+-   **Structure**: Side-by-side Grid (Dual Pane).
+-   **Columns**: 1fr 1fr (Equal width).
+-   **Gap**: `2rem`.
+-   **Responsive**: Stacks vertically on smaller screens (< 900px).
+
+#### Left Pane: Video Player
+-   **Content**: Embedded YouTube Player (iframe).
 -   **Aspect Ratio**: 16:9.
--   **Background**: Black `#000` (High contrast).
--   **Border Radius**: `12px` (Card).
+-   **Styling**: Matches Sketchnote container (Rounded corners, Shadow).
+
+#### Right Pane: Sketchnote Result (`.player-container`)
+-   **Content**: Generated Image.
+-   **Aspect Ratio**: 16:9.
+-   **Background**: Black `#000`.
+-   **Border Radius**: `12px`.
 -   **Shadow**: `0 4px 12px rgba(0, 0, 0, 0.15)`.
 
 ### 5. States

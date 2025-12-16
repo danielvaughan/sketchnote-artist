@@ -13,10 +13,8 @@ COPY . .
 
 # Build the server binary
 # CGO_ENABLED=0 ensures a static binary
-RUN CGO_ENABLED=0 GOOS=linux go build -v -o server ./cmd/server
-
-# Create directories for output artifacts in builder (since distroless has no shell/mkdir)
-RUN mkdir -p sketchnotes visual-briefs
+RUN CGO_ENABLED=0 GOOS=linux go build -v -o server ./cmd/server && \
+  mkdir -p sketchnotes visual-briefs
 
 # Runtime Stage
 # Use Chainguard Static for 0-CVE guarantee and minimal runtime
