@@ -137,13 +137,14 @@ function handleAgentEvent(event, statusMsg, resultImage, progressSection, result
 
   // Example heuristics based on typical ADK event structure:
   // 1. Model Call (Thinking)
-  if (event.Recall || (event.Models && event.Models.length > 0)) {
+  // Check for recall or models in camelCase
+  if (event.recall || (event.models && event.models.length > 0)) {
     statusMsg.innerText = "Curator is analyzing video...";
   }
 
   // 2. Tool Call (Summarizing)
-  if (event.ToolCall) {
-    const toolName = event.ToolCall.Name;
+  if (event.toolCall) {
+    const toolName = event.toolCall.name;
     if (toolName.includes('summarize')) {
       statusMsg.innerText = "Summarizing video content...";
     } else if (toolName.includes('generate_image')) {
@@ -152,11 +153,11 @@ function handleAgentEvent(event, statusMsg, resultImage, progressSection, result
   }
 
   // 3. Model Response (Final Output)
-  if (event.Content && event.Content.Parts) {
-    for (const part of event.Content.Parts) {
-      if (part.Text && part.Text.includes('.png')) {
+  if (event.content && event.content.parts) {
+    for (const part of event.content.parts) {
+      if (part.text && part.text.includes('.png')) {
         // Found image path!
-        const filename = part.Text.trim();
+        const filename = part.text.trim();
         // Assuming filename matches locally served pattern
         // Safety check: is it a path or just name?
         // Extract basename if needed, but tool usually returns basics

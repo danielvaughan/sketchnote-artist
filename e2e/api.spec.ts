@@ -25,7 +25,7 @@ test('api: generate sketchnote', async ({ request }) => {
     console.log(`Submitting video: ${testVideoUrl}`);
 
     // Call streaming endpoint
-    const response = await request.post(`${serviceUrl}/stream-run`, {
+    const response = await request.post(`${serviceUrl}/run_sse`, {
       data: {
         appName: appName,
         userId: userId,
@@ -69,13 +69,13 @@ test('api: generate sketchnote', async ({ request }) => {
           const event = JSON.parse(jsonStr);
 
           // Check for Content with image
-          if (event.Content && event.Content.Parts) {
-            for (const part of event.Content.Parts) {
-              if (part.Text) {
-                finalContent += part.Text;
-                if (part.Text.includes('.png')) {
+          if (event.content && event.content.parts) {
+            for (const part of event.content.parts) {
+              if (part.text) {
+                finalContent += part.text;
+                if (part.text.includes('.png')) {
                   foundImage = true;
-                  console.log(`Found image in event: ${part.Text}`);
+                  console.log(`Found image in event: ${part.text}`);
                 }
               }
             }
