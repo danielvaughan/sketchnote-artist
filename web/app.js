@@ -33,7 +33,7 @@ async function generateSketchnote() {
   // Handle Video Player
   const videoId = extractVideoID(videoUrl);
   if (videoId) {
-    const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+    const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&origin=${window.location.origin}`;
     document.getElementById('youtubeEmbed').src = embedUrl;
     document.getElementById('videoPlayerContainer').classList.remove('hidden');
   }
