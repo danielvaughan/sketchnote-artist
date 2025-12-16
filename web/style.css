@@ -12,6 +12,7 @@
   --font-family: 'Roboto', Arial, sans-serif;
   --radius-pill: 24px;
   --radius-card: 12px;
+  --player-bg: #000000;
 }
 
 body {
@@ -178,7 +179,7 @@ body {
 .video-player-container {
   width: 100%;
   aspect-ratio: 16 / 9;
-  background-color: #000;
+  background-color: var(--player-bg);
   border-radius: var(--radius-card);
   overflow: hidden;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -188,7 +189,7 @@ body {
 .player-container {
   width: 100%;
   aspect-ratio: 16 / 9;
-  background-color: #000;
+  background-color: var(--player-bg);
   /* Keep player black for contrast */
   border-radius: var(--radius-card);
   overflow: hidden;
@@ -259,7 +260,7 @@ body {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  background-color: #000;
+  background-color: var(--player-bg);
 }
 
 /* Result Actions Overlay */
