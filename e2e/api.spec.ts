@@ -35,7 +35,8 @@ test('api: generate sketchnote', async ({ request }) => {
           parts: [
             { text: testVideoUrl }
           ]
-        }
+        },
+        streaming: true
       },
       headers: {
         'Accept': 'text/event-stream'

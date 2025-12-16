@@ -64,7 +64,8 @@ async function generateSketchnote() {
         newMessage: {
           role: "user",
           parts: [{ text: videoUrl }]
-        }
+        },
+        streaming: true
       })
     });
 
@@ -147,36 +148,36 @@ function handleAgentEvent(event, statusMsg, resultImage, progressSection, result
   console.log("Received Event:", event);
 
   // 1. Model Call (Thinking) - Check for ADK 'modelCall' structure
-  // Structure: { models: ["gemini-pro"], endpoints: [...] }
   if (event.models && event.models.length > 0) {
     statusMsg.innerText = "Curator is analyzing video...";
   }
 
-  // 2. Tool Call (Summarizing/Sketching)
-  // Structure: { toolCall: { name: "summarize_youtube_video", ... } }
-  if (event.toolCall) {
-    const toolName = event.toolCall.name;
-    console.log("Tool Call Detected:", toolName);
-
-    if (toolName.includes('summarize')) {
-      statusMsg.innerText = "Summarizing video content...";
-    } else if (toolName.includes('generate_image')) {
-      statusMsg.innerText = "Artist is sketching...";
-    }
-  }
-
-  // 3. Model Response (Final Output)
-  // Structure: { content: { role: "model", parts: [{ text: "..." }] } }
+  // Check content parts for Tool Calls and Text
   if (event.content && event.content.parts) {
     for (const part of event.content.parts) {
+
+      // 2. Tool Call (Summarizing/Sketching)
+      if (part.functionCall) {
+        const toolName = part.functionCall.name;
+        console.log("Tool Call Detected:", toolName);
+
+        if (toolName.includes('summarize')) {
+          statusMsg.innerText = "Summarizing video content...";
+        } else if (toolName.includes('generate_image')) {
+          statusMsg.innerText = "Artist is sketching...";
+        }
+      }
+
+      // 3. Model Response (Final Output or Thinking Text)
       if (part.text) {
-        // Log text chunks for debugging
         console.log("Model Text:", part.text);
+
+        // Ensure we don't overwrite specific status messages with generic text unless it's substantial
+        // But for now, let's keep it simple and just look for the image
 
         if (part.text.includes('.png')) {
           // Found image path!
           const filename = part.text.trim();
-          // Safety check: extract filename if it contains a path or extra text
           const match = filename.match(/[\w-]+\.png/);
           if (match) {
             const cleanFilename = match[0];
