@@ -276,4 +276,11 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
+
+  fetch('/version')
+    .then(r => r.json())
+    .then(data => {
+      document.getElementById('appVersion').innerText = `v${data.version}`;
+    })
+    .catch(e => console.warn("Failed to load version", e));
 });
