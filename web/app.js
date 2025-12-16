@@ -20,12 +20,23 @@ async function generateSketchnote() {
   }
 
   // Reset UI State
+  const displayStage = document.getElementById('displayStage');
+  displayStage.classList.remove('hidden');
+
   idleState.classList.add('hidden');
   resultSection.classList.add('hidden');
   progressSection.classList.remove('hidden');
   statusMsg.innerText = "Initializing...";
   statusMsg.style.color = "var(--text-secondary)";
   generateBtn.disabled = true;
+
+  // Handle Video Player
+  const videoId = extractVideoID(videoUrl);
+  if (videoId) {
+    const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+    document.getElementById('youtubeEmbed').src = embedUrl;
+    document.getElementById('videoPlayerContainer').classList.remove('hidden');
+  }
 
   // Track duration for debugging timeouts
   const startTime = Date.now();
@@ -228,14 +239,25 @@ function resetUI() {
   const progressSection = document.getElementById('progressSection');
   const idleState = document.getElementById('idleState');
   const statusMsg = document.getElementById('statusMessage');
+  const videoPlayerContainer = document.getElementById('videoPlayerContainer');
+  const displayStage = document.getElementById('displayStage');
 
   urlInput.value = "";
   resultSection.classList.add('hidden');
   progressSection.classList.add('hidden');
+  videoPlayerContainer.classList.add('hidden');
+  displayStage.classList.add('hidden'); // Hide the entire stage
+  youtubeEmbed.src = ""; // Stop video
   idleState.classList.remove('hidden');
 
   statusMsg.innerText = "Ready to create...";
   statusMsg.style.color = "var(--text-secondary)";
+}
+
+function extractVideoID(url) {
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[2].length === 11) ? match[2] : null;
 }
 
 // Enable Enter key submission

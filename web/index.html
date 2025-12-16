@@ -35,37 +35,45 @@
       <p id="statusMessage" class="status-text">Ready to create...</p>
     </div>
 
-    <div id="playerContainer" class="player-container">
+    <div id="displayStage" class="display-stage hidden">
+      <!-- Left Pane: Video Player -->
+      <div id="videoPlayerContainer" class="video-player-container hidden">
+        <iframe id="youtubeEmbed" width="100%" height="100%" src="" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+      </div>
 
-      <!-- State: Progress -->
-      <div id="progressSection" class="player-state hidden">
-        <div class="loading-animation">
-          <div class="spinner"></div>
-          <p class="loading-text">Watching video...</p>
+      <!-- Right Pane: Sketchnote Result -->
+      <div id="playerContainer" class="player-container">
+
+        <!-- State: Progress -->
+        <div id="progressSection" class="player-state hidden">
+          <div class="loading-animation">
+            <div class="spinner"></div>
+            <p class="loading-text">Watching video...</p>
+          </div>
         </div>
-      </div>
 
-      <!-- State: Result -->
-      <div id="resultSection" class="player-state hidden">
-        <img id="resultImage" src="" alt="Generated Sketchnote">
-        <div class="result-actions">
-          <button class="action-btn" onclick="downloadImage()" title="Download">
-            <span class="material-icons">download</span>
-          </button>
-          <button class="action-btn" onclick="resetUI()" title="Close">
-            <span class="material-icons">close</span>
-          </button>
-          <button class="action-btn" onclick="shareImage()" title="Share Link">
-            <span class="material-icons">share</span>
-          </button>
+        <!-- State: Result -->
+        <div id="resultSection" class="player-state hidden">
+          <img id="resultImage" src="" alt="Generated Sketchnote">
+          <div class="result-actions">
+            <button class="action-btn" onclick="downloadImage()" title="Download">
+              <span class="material-icons">download</span>
+            </button>
+            <button class="action-btn" onclick="resetUI()" title="Close">
+              <span class="material-icons">close</span>
+            </button>
+            <button class="action-btn" onclick="shareImage()" title="Share Link">
+              <span class="material-icons">share</span>
+            </button>
+          </div>
         </div>
-      </div>
 
-      <!-- State: Idle (Optional placeholder or just empty) -->
-      <div id="idleState" class="player-state placeholder">
-        <span class="material-icons large-icon">smart_display</span>
-      </div>
+        <!-- State: Idle (Optional placeholder or just empty) -->
+        <div id="idleState" class="player-state placeholder">
+          <span class="material-icons large-icon">smart_display</span>
+        </div>
 
+      </div>
     </div>
 
   </main>
