@@ -143,19 +143,21 @@ async function generateSketchnote() {
 }
 
 function handleAgentEvent(event, statusMsg, resultImage, progressSection, resultSection) {
-  // Handle different event types from ADK
-  // This depends on the exact JSON structure of *session.Event
+  // Debug: Log every event to inspect structure
+  console.log("Received Event:", event);
 
-  // Example heuristics based on typical ADK event structure:
-  // 1. Model Call (Thinking)
-  // Check for recall or models in camelCase
-  if (event.recall || (event.models && event.models.length > 0)) {
+  // 1. Model Call (Thinking) - Check for ADK 'modelCall' structure
+  // Structure: { models: ["gemini-pro"], endpoints: [...] }
+  if (event.models && event.models.length > 0) {
     statusMsg.innerText = "Curator is analyzing video...";
   }
 
-  // 2. Tool Call (Summarizing)
+  // 2. Tool Call (Summarizing/Sketching)
+  // Structure: { toolCall: { name: "summarize_youtube_video", ... } }
   if (event.toolCall) {
     const toolName = event.toolCall.name;
+    console.log("Tool Call Detected:", toolName);
+
     if (toolName.includes('summarize')) {
       statusMsg.innerText = "Summarizing video content...";
     } else if (toolName.includes('generate_image')) {
@@ -164,35 +166,37 @@ function handleAgentEvent(event, statusMsg, resultImage, progressSection, result
   }
 
   // 3. Model Response (Final Output)
+  // Structure: { content: { role: "model", parts: [{ text: "..." }] } }
   if (event.content && event.content.parts) {
     for (const part of event.content.parts) {
-      if (part.text && part.text.includes('.png')) {
-        // Found image path!
-        const filename = part.text.trim();
-        // Assuming filename matches locally served pattern
-        // Safety check: is it a path or just name?
-        // Extract basename if needed, but tool usually returns basics
+      if (part.text) {
+        // Log text chunks for debugging
+        console.log("Model Text:", part.text);
 
-        // Ensure we check for the actual filename
-        // The text might be "Image saved to: foo.png"
-        // We need to extract the .png part.
-        const match = filename.match(/[\w-]+\.png/);
-        if (match) {
-          const cleanFilename = match[0];
-          const imagePath = `/images/${cleanFilename}`;
+        if (part.text.includes('.png')) {
+          // Found image path!
+          const filename = part.text.trim();
+          // Safety check: extract filename if it contains a path or extra text
+          const match = filename.match(/[\w-]+\.png/);
+          if (match) {
+            const cleanFilename = match[0];
+            const imagePath = `/images/${cleanFilename}`;
+            console.log("Loading Image:", imagePath);
 
-          // Preload image to ensure it's ready
-          const img = new Image();
-          img.onload = () => {
-            resultImage.src = imagePath;
-            progressSection.classList.add('hidden');
-            resultSection.classList.remove('hidden');
-            statusMsg.innerText = "Sketchnote created successfully!";
-          };
-          img.onerror = () => {
-            statusMsg.innerText = "Image generated but failed to load.";
-          };
-          img.src = imagePath;
+            // Preload image to ensure it's ready
+            const img = new Image();
+            img.onload = () => {
+              resultImage.src = imagePath;
+              progressSection.classList.add('hidden');
+              resultSection.classList.remove('hidden');
+              statusMsg.innerText = "Sketchnote created successfully!";
+            };
+            img.onerror = () => {
+              console.error("Failed to load image:", imagePath);
+              statusMsg.innerText = "Image generated but failed to load.";
+            };
+            img.src = imagePath;
+          }
         }
       }
     }
