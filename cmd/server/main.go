@@ -8,7 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
-
+	"strings"
 	"time"
 
 	"google.golang.org/adk/agent"
@@ -139,6 +139,23 @@ func main() {
 			w.Header().Set("Content-Type", "image/png")
 			if _, err := io.Copy(w, reader); err != nil {
 				slog.Error("Failed to stream image content", "error", err)
+			}
+			return
+		}
+
+		// Serve version endpoint
+		if r.URL.Path == "/version" {
+			versionBytes, err := os.ReadFile("VERSION")
+			if err != nil {
+				slog.Error("Failed to read VERSION file", "error", err)
+				http.Error(w, "Failed to read version", http.StatusInternalServerError)
+				return
+			}
+			version := strings.TrimSpace(string(versionBytes))
+			w.Header().Set("Content-Type", "application/json")
+			// Create a precise JSON response without whitespace issues
+			if _, err := io.WriteString(w, `{"version": "`+version+`"}`); err != nil {
+				slog.Error("Failed to write version response", "error", err)
 			}
 			return
 		}

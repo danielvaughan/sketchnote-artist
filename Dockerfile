@@ -9,7 +9,11 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 # Copy source code
+# Copy source code
 COPY . .
+
+# Copy VERSION file
+COPY VERSION ./VERSION
 
 # Build the server binary
 # CGO_ENABLED=0 ensures a static binary
@@ -30,7 +34,9 @@ COPY --chown=nonroot:nonroot web ./web
 
 # Copy empty directories with correct ownership for the app to write to
 COPY --from=builder --chown=nonroot:nonroot /app/sketchnotes ./sketchnotes
+COPY --from=builder --chown=nonroot:nonroot /app/sketchnotes ./sketchnotes
 COPY --from=builder --chown=nonroot:nonroot /app/visual-briefs ./visual-briefs
+COPY --from=builder --chown=nonroot:nonroot /app/VERSION ./VERSION
 
 # Set environment variables
 ENV PORT=8080
