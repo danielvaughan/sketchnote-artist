@@ -2,6 +2,7 @@
 /sketchnote-artist
 /main
 /generated_result*.png
+images/
 
 # Environment variables
 .env
