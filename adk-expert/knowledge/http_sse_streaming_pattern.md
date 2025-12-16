@@ -80,10 +80,10 @@ http.ListenAndServe(":8080", handler)
 *   **Body** (JSON):
     ```json
     {
-      "app_name": "my-app",
-      "user_id": "user-123",
-      "session_id": "session-456",
-      "new_message": {
+      "appName": "my-app",
+      "userId": "user-123",
+      "sessionId": "session-456",
+      "newMessage": {
         "role": "user",
         "parts": [{ "text": "Hello agent" }]
       }

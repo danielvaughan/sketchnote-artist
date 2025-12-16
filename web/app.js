@@ -43,18 +43,17 @@ async function generateSketchnote() {
     // 2. Start Streaming Request
     statusMsg.innerText = "Connecting to agent...";
 
-    const response = await fetch(`${API_BASE}/run_sse`, {
+    const response = await fetch('/run_sse', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        app_name: APP_NAME,
-        user_id: USER_ID,
-        session_id: sessionId,
-        new_message: {
+        appName: APP_NAME,
+        userId: USER_ID,
+        sessionId: sessionId,
+        newMessage: {
           role: "user",
           parts: [{ text: videoUrl }]
-        },
-        "streaming": true
+        }
       })
     });
 
