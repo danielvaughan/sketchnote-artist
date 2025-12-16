@@ -1,0 +1,11 @@
+# Hadolint Configuration
+# Documentation: https://github.com/hadolint/hadolint
+
+# Ignore specific rules
+# ignored:
+#   - DL3008 # Pin versions in apt get install
+
+# Trusted Registries
+trustedRegistries:
+  - cgr.dev
+  - us-central1-docker.pkg.dev
