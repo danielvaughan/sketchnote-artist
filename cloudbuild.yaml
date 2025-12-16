@@ -8,6 +8,11 @@ steps:
     entrypoint: 'hadolint'
     args: ['Dockerfile']
 
+  # Run Secret Scanning
+  - name: 'zricethezav/gitleaks:latest'
+    entrypoint: 'gitleaks'
+    args: ['detect', '--source=.', '--verbose']
+
   # Build and Push using Kaniko for layer caching and faster builds
   - name: 'gcr.io/kaniko-project/executor:latest'
     args:
