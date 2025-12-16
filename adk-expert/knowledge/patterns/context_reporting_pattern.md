@@ -17,8 +17,8 @@ Define these helpers in a shared utility package (e.g., `pkg/utils` or `pkg/obse
 package observability
 
 import (
-	"context"
-	"fmt"
+ "context"
+ "fmt"
 )
 
 // StatusReporter is the function signature for sending updates.
@@ -29,18 +29,18 @@ type statusKey struct{}
 
 // WithStatusReporter returns a new context containing the reporter.
 func WithStatusReporter(ctx context.Context, reporter StatusReporter) context.Context {
-	return context.WithValue(ctx, statusKey{}, reporter)
+ return context.WithValue(ctx, statusKey{}, reporter)
 }
 
 // Report sends a status update if a reporter is present in the context.
 // It is safe to call even if no reporter is configured (no-op or fallback).
 func Report(ctx context.Context, message string, details ...interface{}) {
-	if reporter, ok := ctx.Value(statusKey{}).(StatusReporter); ok {
-		reporter(message, details...)
-	} else {
-		// Optional: Fallback to standard log if debugging
-		// fmt.Printf("[Fallback Log] " + message + "\n", details...)
-	}
+ if reporter, ok := ctx.Value(statusKey{}).(StatusReporter); ok {
+  reporter(message, details...)
+ } else {
+  // Optional: Fallback to standard log if debugging
+  // fmt.Printf("[Fallback Log] " + message + "\n", details...)
+ }
 }
 ````
 
@@ -106,12 +106,11 @@ func HandleRequest(w http.ResponseWriter, r *http.Request) {
 
 ## Benefits for Agents
 
-1.  **Decoupling:** Your deep logic (`ReadFile`) doesn't import `fmt` or `websocket`.
-2.  **Testability:** In unit tests, you can inject a "mock" reporter to verify that your agent is reporting the correct progress steps.
-3.  **Concurrency Safe:** Because `context` is immutable and passed down the stack, this works perfectly in concurrent Go routines.
-4.  **UI Agnostic:** The same agent code can power a CLI tool, a Slack bot, and a Web UI without changing a single line of business logic.
+1. **Decoupling:** Your deep logic (`ReadFile`) doesn't import `fmt` or `websocket`.
+2. **Testability:** In unit tests, you can inject a "mock" reporter to verify that your agent is reporting the correct progress steps.
+3. **Concurrency Safe:** Because `context` is immutable and passed down the stack, this works perfectly in concurrent Go routines.
+4. **UI Agnostic:** The same agent code can power a CLI tool, a Slack bot, and a Web UI without changing a single line of business logic.
 
 <!-- end list -->
 
-```
-
+```go

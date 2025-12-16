@@ -1,46 +1,53 @@
 # Requirement: Session Persistence with Google Cloud Firestore
 
 ## Overview
+
 This requirement details the migration of session management from in-memory storage to Google Cloud Firestore when the Sketchnote Artist application is deployed on Google Cloud Run. This ensures session state persists across serverless instance lifecycles (restarts, scaling to zero) and supports high concurrency.
 
 ## Current State
+
 - The application currently uses `session.InMemoryService()` (provided by the ADK).
 - Session data is lost if the Cloud Run container restarts or scales down.
 
 ## Objective
+
 Enable persistent session management using Google Cloud Firestore in the Cloud Run environment, while maintaining in-memory sessions for local development.
 
 ## Detailed Requirements
 
 ### 1. Environment Detection & Configuration
+
 - **Mechanism**: Use the existing `DEPLOYMENT_MODE` environment variable.
 - **Variable**: `DEPLOYMENT_MODE`.
-    - If `cloud_run`, initialize and use the Firestore session service.
-    - If `local` (or missing), default to `session.InMemoryService()`.
+  - If `cloud_run`, initialize and use the Firestore session service.
+  - If `local` (or missing), default to `session.InMemoryService()`.
 - **Configuration**:
-    - **Project ID**: The application must be able to resolve the Google Cloud Project ID (typically from the metadata server or `GOOGLE_CLOUD_PROJECT` env var).
-    - **Collection Name**: The Firestore collection to use for sessions (e.g., `sketchnote_sessions`).
+  - **Project ID**: The application must be able to resolve the Google Cloud Project ID (typically from the metadata server or `GOOGLE_CLOUD_PROJECT` env var).
+  - **Collection Name**: The Firestore collection to use for sessions (e.g., `sketchnote_sessions`).
 
 ### 2. Infrastructure (Terraform)
+
 - **New Resources**: Update the existing Terraform configuration to enable the Firestore API and (if necessary) create the default database.
-    - *Note*: Firestore operates in either "Native" or "Datastore" mode. The project should assume **Native mode**.
-    - Resource: `google_firestore_database` (if not already existing in the project).
+  - *Note*: Firestore operates in either "Native" or "Datastore" mode. The project should assume **Native mode**.
+  - Resource: `google_firestore_database` (if not already existing in the project).
 - **IAM Permissions**:
-    - The Cloud Run service account must be granted:
-        - `roles/datastore.user` (Cloud Datastore User) - allows reading and writing to Firestore.
+  - The Cloud Run service account must be granted:
+    - `roles/datastore.user` (Cloud Datastore User) - allows reading and writing to Firestore.
 
 ### 3. Application Logic Changes
+
 - **New Package**: Create `internal/persistence/firestore`.
 - **Implementation**:
-    - Define a struct `FirestoreSessionService` that implements the `session.Service` interface from `google.golang.org/adk/session`.
-    - The implementation must handle:
-        - `Create(ctx context.Context, session *session.Session) error`
-        - `Get(ctx context.Context, id string) (*session.Session, error)`
-        - `Update(ctx context.Context, session *session.Session) error`
-        - `Delete(ctx context.Context, id string) error`
-        - `List(ctx context.Context, user string) ([]*session.Session, error)` (if required by interface).
+  - Define a struct `FirestoreSessionService` that implements the `session.Service` interface from `google.golang.org/adk/session`.
+  - The implementation must handle:
+    - `Create(ctx context.Context, session *session.Session) error`
+    - `Get(ctx context.Context, id string) (*session.Session, error)`
+    - `Update(ctx context.Context, session *session.Session) error`
+    - `Delete(ctx context.Context, id string) error`
+    - `List(ctx context.Context, user string) ([]*session.Session, error)` (if required by interface).
 - **Integration**:
-    - In `cmd/server/main.go`, condition the initialization of `session.Service`:
+  - In `cmd/server/main.go`, condition the initialization of `session.Service`:
+
       ```go
       var sessionService session.Service
       if os.Getenv("DEPLOYMENT_MODE") == "cloud_run" {
@@ -52,20 +59,22 @@ Enable persistent session management using Google Cloud Firestore in the Cloud R
       ```
 
 ### 4. Data Model
+
 - Map the `session.Session` struct to a Firestore document.
 - **Key**: Session ID.
 - **Fields**:
-    - `id` (string)
-    - `messages` (array/sub-collection): The conversation history.
-    - `state` (map): Arbitrary state data (e.g., visual brief content).
-    - `created_at` (timestamp)
-    - `updated_at` (timestamp)
+  - `id` (string)
+  - `messages` (array/sub-collection): The conversation history.
+  - `state` (map): Arbitrary state data (e.g., visual brief content).
+  - `created_at` (timestamp)
+  - `updated_at` (timestamp)
 
 ## Acceptance Criteria
-1.  **Local Development**: Application works locally with in-memory sessions (no Firestore credentials needed).
-2.  **Cloud Deployment**:
+
+1. **Local Development**: Application works locally with in-memory sessions (no Firestore credentials needed).
+2. **Cloud Deployment**:
     - Terraform successfully enables Firestore and assigns permissions.
     - Application deploys with `DEPLOYMENT_MODE=cloud_run`.
-3.  **Functionality**:
+3. **Functionality**:
     - A session created on one Cloud Run instance is accessible from another (or after a restart).
     - Session state (e.g., the visual brief generated by the Curator) is correctly saved and retrieved by the Artist agent.

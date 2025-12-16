@@ -27,8 +27,37 @@ func NewImageGenerationTool(client *genai.Client, store storage.Store, folder st
 			Filename string `json:"filename" doc:"The desired filename for the generated image (e.g., visual_brief.png)."`
 		}) (string, error) {
 			prompt := args.Prompt
-			// Sanitize filename to prevent directory traversal
+			// Sanitize filename to snake_case
 			filename := filepath.Base(args.Filename)
+			ext := filepath.Ext(filename)
+			name := strings.TrimSuffix(filename, ext)
+
+			// Convert to lowercase
+			name = strings.ToLower(name)
+			// Replace spaces and hyphens with underscores
+			name = strings.ReplaceAll(name, " ", "_")
+			name = strings.ReplaceAll(name, "-", "_")
+			// Remove any other non-alphanumeric characters (simple clean)
+			// For a robust implementation we might want regex, but standard lib strings map is safer/simpler for now
+			// taking a simple approach: if not letter/digit/underscore, make it underscore
+			var builder strings.Builder
+			for _, r := range name {
+				if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '_' {
+					builder.WriteRune(r)
+				} else {
+					builder.WriteRune('_')
+				}
+			}
+			name = builder.String()
+
+			// Collapse multiple underscores
+			for strings.Contains(name, "__") {
+				name = strings.ReplaceAll(name, "__", "_")
+			}
+			// Trim underscores
+			name = strings.Trim(name, "_")
+
+			filename = name + ext
 			observability.Report(ctx, fmt.Sprintf("\n%s The Artist is sketching...", "🎨"))
 			slog.Info("Generating image", "filename", filename)
 

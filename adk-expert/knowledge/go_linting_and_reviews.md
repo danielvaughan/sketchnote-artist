@@ -55,16 +55,18 @@ formatters:
 
 ### Best Practices (2025 Research)
 
-1.  **Version Consistency**: Always ensure your local linter version matches your CI version (`v2.7.2` in this project). Mismatches lead to "works on my machine" but fails in CI.
-2.  **Pre-commit Hooks**: Use `pre-commit` to prevent bad code from entering the repo.
+1. **Version Consistency**: Always ensure your local linter version matches your CI version (`v2.7.2` in this project). Mismatches lead to "works on my machine" but fails in CI.
+2. **Pre-commit Hooks**: Use `pre-commit` to prevent bad code from entering the repo.
+
     ```yaml
     - repo: https://github.com/golangci/golangci-lint
       rev: v2.7.2
       hooks:
         - id: golangci-lint
     ```
-3.  **Gradual Adoption**: If adding linters to a legacy project, use `--new-from-rev=HEAD~1` to only lint new changes, preventing an avalanche of errors.
-4.  **Performance**: Enable `cache` in your CI/CD (e.g., using `actions/cache` or Kaniko) to speed up linting runs.
+
+3. **Gradual Adoption**: If adding linters to a legacy project, use `--new-from-rev=HEAD~1` to only lint new changes, preventing an avalanche of errors.
+4. **Performance**: Enable `cache` in your CI/CD (e.g., using `actions/cache` or Kaniko) to speed up linting runs.
 
 ### Running Lint Checks
 
@@ -83,34 +85,40 @@ golangci-lint run --fix
 When reviewing Go code, look beyond logic errors. Ensure the code adheres to "idiomatic Go" (The Go Way).
 
 ### General
+
 - [ ] **Formatting**: Is the code formatted with `gofmt`? (CI should enforce this).
 - [ ] **Imports**: Are imports sorted? (Use `goimports`).
 - [ ] **Naming**:
-    - Variables: Short names for short scopes (`i`, `r`), descriptive names for long scopes.
-    - CamelCase: No underscores (`user_id` -> `userID`).
-    - Exported: Capitalized (`User`), unexported lowercase (`user`).
+  - Variables: Short names for short scopes (`i`, `r`), descriptive names for long scopes.
+  - CamelCase: No underscores (`user_id` -> `userID`).
+  - Exported: Capitalized (`User`), unexported lowercase (`user`).
 
 ### Error Handling
+
 - [ ] **Don't Panic**: Use error returns instead of `panic()` for normal error conditions.
 - [ ] **Wrap Errors**: Use `fmt.Errorf("...: %w", err)` to wrap errors so context is preserved but `errors.Is/As` still work.
 - [ ] **Check Errors**: Never ignore errors using `_`. At minimum, log them.
 
 ### Concurrency
+
 - [ ] **Context**: Functions doing I/O should accept `context.Context` as the first argument.
 - [ ] **Data Races**: Run tests with `go test -race`.
 - [ ] **Channel Closing**: Ensure channels are closed by the sender, not the receiver. Avoid closing closed channels.
 
 ### API Design
+
 - [ ] **Interfaces**: Accept interfaces, return structs ("Accept interfaces, return concrete types").
 - [ ] **Zero Values**: Make structs useful without explicit initialization/constructors where possible.
 
 ### Dependency Management
+
 - [ ] **Modules**: Is `go.mod` and `go.sum` updated?
 - [ ] **Vendoring**: If using vendoring, is the `vendor/` directory consistent?
 
 ---
 
 ## 3. References
+
 - [Effective Go](https://go.dev/doc/effective_go)
 - [Google Go Style Guide](https://google.github.io/styleguide/go/)
 - [Go Code Review Comments](https://github.com/golang/go/wiki/CodeReviewComments)

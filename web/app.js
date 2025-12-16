@@ -75,6 +75,7 @@ async function generateSketchnote() {
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
+    let accumulatedResponseText = ''; // Accumulate text across all chunks
 
     while (true) {
       const { done, value } = await reader.read();
@@ -116,7 +117,16 @@ async function generateSketchnote() {
           const jsonStr = line.substring(6);
           try {
             const event = JSON.parse(jsonStr);
-            handleAgentEvent(event, statusMsg, resultImage, progressSection, resultSection);
+            // Update the accumulator with any new text
+            if (event.content && event.content.parts) {
+              for (const part of event.content.parts) {
+                if (part.text) {
+                  accumulatedResponseText += part.text;
+                }
+              }
+            }
+            // Pass the accumulated text to the handler
+            handleAgentEvent(event, accumulatedResponseText, statusMsg, resultImage, progressSection, resultSection);
           } catch (e) {
             console.warn("Failed to parse event", e);
           }
@@ -143,7 +153,7 @@ async function generateSketchnote() {
   }
 }
 
-function handleAgentEvent(event, statusMsg, resultImage, progressSection, resultSection) {
+function handleAgentEvent(event, accumulatedText, statusMsg, resultImage, progressSection, resultSection) {
   // Debug: Log every event to inspect structure
   console.log("Received Event:", event);
 
@@ -168,20 +178,26 @@ function handleAgentEvent(event, statusMsg, resultImage, progressSection, result
         }
       }
 
-      // 3. Model Response (Final Output or Thinking Text)
-      if (part.text) {
-        console.log("Model Text:", part.text);
-
-        // Ensure we don't overwrite specific status messages with generic text unless it's substantial
-        // But for now, let's keep it simple and just look for the image
-
-        if (part.text.includes('.png')) {
+      // 3. Check Accumulated Text for Image Filename
+      if (part.text || accumulatedText) {
+        // Using the accumulated text passed from the stream reader
+        if (accumulatedText && accumulatedText.includes('.png')) {
           // Found image path!
-          const filename = part.text.trim();
-          const match = filename.match(/[\w-]+\.png/);
-          if (match) {
-            const cleanFilename = match[0];
+          // Use regex on the FULL accumulated text
+          // Updated regex to include \s to allow spaces in filenames
+          const Match = accumulatedText.match(/[\w\s-]+\.png/);
+
+          // Only proceed if we found a match AND it's a new image (simple check to avoid repeated loads or complex state)
+          // For now, naive check is fine as long as we clear state or handle it.
+          // Since the stream ends shortly after, multiple triggers of this block are acceptable as they point to the same image.
+
+          if (Match) {
+            const cleanFilename = Match[0].trim();
             const imagePath = `/images/${cleanFilename}`;
+
+            // Avoid re-triggering if already set (optimization)
+            if (resultImage.src.endsWith(imagePath)) return;
+
             console.log("Loading Image:", imagePath);
 
             // Preload image to ensure it's ready
