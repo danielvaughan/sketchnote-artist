@@ -93,7 +93,7 @@ To run the automated end-to-end tests (verified against the deployed `dev` envir
 
     *   **UI Test** (Simulates user interaction in the browser):
         ```bash
-        npx playwright test e2e/sketchnote.spec.ts
+        npx playwright test e2e/webui.spec.ts
         ```
 
     *   **API Test** (Directly calls REST endpoints):
