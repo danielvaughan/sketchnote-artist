@@ -21,7 +21,6 @@ resource "google_cloudbuild_trigger" "push_to_main" {
     _REGION       = var.region
     _SERVICE_NAME = local.service_name
     _REPO_NAME    = "sketchnote-repo-${local.env}"
-    _GOOGLE_API_KEY = "sm://projects/${var.project_id}/secrets/${google_secret_manager_secret.google_api_key.secret_id}/versions/latest"
   }
 
   include_build_logs = "INCLUDE_BUILD_LOGS_WITH_STATUS"

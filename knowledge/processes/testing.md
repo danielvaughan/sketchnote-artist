@@ -85,10 +85,12 @@ The project uses `pre-commit` to ensure code quality. Unit tests are automatical
 
 ### CI/CD Pipeline
 
-The Cloud Build pipeline (`cloudbuild.yaml`) automatically runs both unit and integration tests on every push to the `dev` branch:
+The Cloud Build pipeline (`cloudbuild.yaml`) automatically runs unit tests on every push to the `dev` branch:
 
 1. **Unit Tests**: `go test ./...`
-2. **Integration Tests**: `go test -tags=integration ./...`
+
+> [!NOTE]
+> Integration tests are excluded from the CI/CD pipeline to ensure fast and reliable builds. They should be run manually during the verification phase.
 
 #### Secret Management
 
