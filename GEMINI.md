@@ -95,6 +95,7 @@ A collection of resources and documentation for the project.
 
 ### Go Development
 
+* [Go Project Structure](knowledge/go/project-structure.md): Best practices for organizing Go code and tests.
 * [Go Best Practices](knowledge/go/go-best-practices.md): Guidelines for writing idiomatic and maintainable Go code.
 * [Go Linting and Reviews](knowledge/go/go_linting_and_reviews.md): Standards for linting and code reviews.
 * [Logging Best Practices](knowledge/go/logging_best_practices.md): Recommendations for structured logging.

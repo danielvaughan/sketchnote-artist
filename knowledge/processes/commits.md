@@ -55,3 +55,25 @@ To use this template as your default for this repository:
 * **Conciseness**: Keep the subject line under 50 characters.
 * **Detail**: Use the body for "what" and "why" explanations, wrapping at 72 characters.
 * **Atomic Commits**: Keep commits focused on a single logical change.
+
+## Agent Guidelines
+
+> [!IMPORTANT]
+> **No Direct Pushes**: Agents should NEVER use `git push` directly. After making a commit, an agent must inform the user that the commit has been made and explicitly ask the user to confirm any pushes to the remote repository.
+
+## Agent Identity
+
+To ensure clear attribution, Antigravity should use a dedicated local Git identity.
+
+> [!IMPORTANT]
+> **Identity Rule**: Every commit made by the agent MUST use the following identity configured locally in the repository:
+>
+> * **Name**: `Daniel Vaughan with Antigravity`
+> * **Email**: `antigravity@danielvaughan.com`
+
+To set this up, run the following commands in the project root:
+
+```bash
+git config --local user.name "Daniel Vaughan with Antigravity"
+git config --local user.email "antigravity@danielvaughan.com"
+```
