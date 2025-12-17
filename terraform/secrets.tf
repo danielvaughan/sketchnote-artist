@@ -1,5 +1,5 @@
 resource "google_secret_manager_secret" "google_api_key" {
-  secret_id = "GOOGLE_API_KEY"
+  secret_id = "GOOGLE_API_KEY-${local.env}"
 
   replication {
     auto {}

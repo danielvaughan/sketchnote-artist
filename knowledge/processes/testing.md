@@ -94,7 +94,7 @@ The Cloud Build pipeline (`cloudbuild.yaml`) automatically runs both unit and in
 
 Integration tests require the `GOOGLE_API_KEY`, which is stored in **Google Cloud Secret Manager**.
 
-* **Secret ID**: `GOOGLE_API_KEY`
+* **Secret ID**: `GOOGLE_API_KEY-dev` or `GOOGLE_API_KEY-prod` (environment-specific).
 * **Access**: The Cloud Build service account has `roles/secretmanager.secretAccessor` permission, granted via Terraform in `terraform/secrets.tf`.
 * **Usage**: The secret is passed to the build via a substitution in `cloudbuild.tf`:
-  `_GOOGLE_API_KEY = "sm://projects/${PROJECT_ID}/secrets/GOOGLE_API_KEY/versions/latest"`
+  `_GOOGLE_API_KEY = "sm://projects/${var.project_id}/secrets/GOOGLE_API_KEY-${local.env}/versions/latest"`

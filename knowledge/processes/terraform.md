@@ -90,3 +90,18 @@ The `locals.tf` file contains logic that uses the current workspace to configure
     ```bash
     export SERVICE_URL=$(cd terraform && terraform output -raw service_url)
     ```
+
+## Secret Management
+
+Integration tests in CI/CD require a `GOOGLE_API_KEY` in Secret Manager.
+
+1. **Create the secret container** (Done via `terraform apply`).
+2. **Add the secret value** for each environment:
+
+    ```bash
+    # For Dev
+    gcloud secrets versions add GOOGLE_API_KEY-dev --data-file=<(echo -n "YOUR_DEV_API_KEY")
+
+    # For Prod
+    gcloud secrets versions add GOOGLE_API_KEY-prod --data-file=<(echo -n "YOUR_PROD_API_KEY")
+    ```
