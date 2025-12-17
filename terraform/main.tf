@@ -57,3 +57,8 @@ resource "google_project_service" "container_scanning_api" {
   service            = "containerscanning.googleapis.com"
   disable_on_destroy = false
 }
+
+resource "google_project_service" "secret_manager_api" {
+  service            = "secretmanager.googleapis.com"
+  disable_on_destroy = false
+}

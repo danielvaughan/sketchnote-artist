@@ -71,3 +71,30 @@ Set the Service URL based on your testing environment:
     ```bash
     npx playwright test
     ```
+
+## Automation
+
+### Pre-commit Hooks
+
+The project uses `pre-commit` to ensure code quality. Unit tests are automatically run before every commit:
+
+```yaml
+- id: go-unit-tests
+  entry: go test ./...
+```
+
+### CI/CD Pipeline
+
+The Cloud Build pipeline (`cloudbuild.yaml`) automatically runs both unit and integration tests on every push to the `dev` branch:
+
+1. **Unit Tests**: `go test ./...`
+2. **Integration Tests**: `go test -tags=integration ./...`
+
+#### Secret Management
+
+Integration tests require the `GOOGLE_API_KEY`, which is stored in **Google Cloud Secret Manager**.
+
+* **Secret ID**: `GOOGLE_API_KEY`
+* **Access**: The Cloud Build service account has `roles/secretmanager.secretAccessor` permission, granted via Terraform in `terraform/secrets.tf`.
+* **Usage**: The secret is passed to the build via a substitution in `cloudbuild.tf`:
+  `_GOOGLE_API_KEY = "sm://projects/${PROJECT_ID}/secrets/GOOGLE_API_KEY/versions/latest"`

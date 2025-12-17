@@ -25,3 +25,12 @@ repos:
       - id: markdownlint
         args: ["--fix", "--ignore", "node_modules", "--ignore", ".gemini", "--ignore", "private"]
 
+  - repo: local
+    hooks:
+      - id: go-unit-tests
+        name: Run Go Unit Tests
+        entry: go test ./...
+        language: system
+        pass_filenames: false
+        always_run: true
+

@@ -19,6 +19,18 @@ steps:
     entrypoint: 'gitleaks'
     args: ['detect', '--source=.', '--verbose']
 
+  # Run Unit Tests
+  - name: 'golang:1.24.0'
+    entrypoint: 'go'
+    args: ['test', './...']
+
+  # Run Integration Tests
+  - name: 'golang:1.24.0'
+    entrypoint: 'go'
+    args: ['test', '-tags=integration', './...']
+    env:
+      - 'GOOGLE_API_KEY=$_GOOGLE_API_KEY'
+
   # Build and Push using Kaniko for layer caching and faster builds
   - name: 'gcr.io/kaniko-project/executor:latest'
     args:
