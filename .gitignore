@@ -71,3 +71,4 @@ test-results/
 
 # Private files and directories
 /private/
+/temp/

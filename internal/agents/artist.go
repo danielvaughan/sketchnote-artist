@@ -14,6 +14,7 @@ import (
 	"google.golang.org/adk/tool"
 	"google.golang.org/genai"
 
+	"github.com/danielvaughan/sketchnote-artist/internal/config"
 	"github.com/danielvaughan/sketchnote-artist/internal/observability"
 	"github.com/danielvaughan/sketchnote-artist/internal/prompts"
 	"github.com/danielvaughan/sketchnote-artist/internal/storage"
@@ -34,7 +35,7 @@ func NewArtist(ctx context.Context, apiKey string, store storage.Store) (agent.A
 	}
 
 	// Initialize the model for the Artist agent
-	model, err := gemini.NewModel(ctx, "gemini-2.5-flash", &genai.ClientConfig{
+	model, err := gemini.NewModel(ctx, config.ArtistModel, &genai.ClientConfig{
 		APIKey: apiKey,
 	})
 	if err != nil {

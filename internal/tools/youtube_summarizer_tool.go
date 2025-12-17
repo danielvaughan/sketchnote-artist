@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/danielvaughan/sketchnote-artist/internal/config"
 	"github.com/danielvaughan/sketchnote-artist/internal/prompts"
 
 	"google.golang.org/adk/tool"
@@ -50,7 +51,7 @@ func SummarizeVideo(ctx context.Context, client *genai.Client, videoURL string) 
 	slog.Info("Calling tool: summarize_youtube_video", "url", videoURL)
 
 	// Call Gemini with the Video URI using Streaming to avoid timeouts
-	iter := client.Models.GenerateContentStream(ctx, "gemini-3-pro-preview", []*genai.Content{
+	iter := client.Models.GenerateContentStream(ctx, config.YouTubeSummarizerToolModel, []*genai.Content{
 		{
 			Parts: []*genai.Part{
 				{

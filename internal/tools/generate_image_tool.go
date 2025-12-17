@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/danielvaughan/sketchnote-artist/internal/config"
 	"github.com/danielvaughan/sketchnote-artist/internal/observability"
 	"github.com/danielvaughan/sketchnote-artist/internal/storage"
 	"google.golang.org/adk/tool"
@@ -62,7 +63,7 @@ func NewImageGenerationTool(client *genai.Client, store storage.Store, folder st
 			slog.Info("Generating image", "filename", filename)
 
 			// Call Imagen 3 model
-			resp, err := client.Models.GenerateContent(ctx, "gemini-3-pro-image-preview", genai.Text(prompt), nil)
+			resp, err := client.Models.GenerateContent(ctx, config.ImageGeneratorToolModel, genai.Text(prompt), nil)
 			if err != nil {
 				slog.Error("Image generation failed", "error", err)
 				return "", fmt.Errorf("generation failed: %w", err)

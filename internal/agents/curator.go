@@ -17,6 +17,7 @@ import (
 	"google.golang.org/adk/tool"
 	"google.golang.org/genai"
 
+	"github.com/danielvaughan/sketchnote-artist/internal/config"
 	"github.com/danielvaughan/sketchnote-artist/internal/observability"
 	"github.com/danielvaughan/sketchnote-artist/internal/prompts"
 	"github.com/danielvaughan/sketchnote-artist/internal/storage"
@@ -29,7 +30,7 @@ const CuratorEmoji = "🧐"
 // NewCurator creates the curator agent.
 func NewCurator(ctx context.Context, apiKey string, store storage.Store) (agent.Agent, error) {
 	// Initialize the Gemini model for the Curator agent
-	model, err := gemini.NewModel(ctx, "gemini-3-pro-preview", &genai.ClientConfig{
+	model, err := gemini.NewModel(ctx, config.CuratorModel, &genai.ClientConfig{
 		APIKey: apiKey,
 	})
 	if err != nil {
