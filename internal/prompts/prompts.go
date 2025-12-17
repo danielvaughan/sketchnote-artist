@@ -70,7 +70,7 @@ Ensure the image generation request includes these strict styling details:
 1.  Analyze the visual brief to identify the central theme and 3-4 supporting key points.
 2.  Synthesize a **detailed description** that combines the brief's content with the "Visual Style Parameters" above.
 3.  **INVOKE** the generate_image tool using that description to output the final image.
-4.  **FINAL ANSWER:** The generate_image tool will return the exact filename where the image was saved (which may be different from your request due to sanitization or duplicates). You MUST end your response with the exact text: "I have successfully generated the sketchnote: [Filename_Returned_By_Tool]" using ONLY the filename returned by the tool.`
+4.  **FINAL ANSWER:** The generate_image tool returns a message like "Image successfully saved to [filename]". You MUST read this message, extract the exact [filename] from it, and end your response with: "I have successfully generated the sketchnote: [filename]". Do NOT use your original requested filename; use the one from the tool response.`
 
 // YouTubeSummarizerInstruction is the system prompt for the video summarizer tool.
 const YouTubeSummarizerInstruction = `Analyze the video and provide a structured response with the following sections:
