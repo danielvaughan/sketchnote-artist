@@ -50,52 +50,81 @@ func SummarizeVideo(ctx context.Context, client *genai.Client, videoURL string) 
 	startTime := time.Now()
 	slog.Info("Calling tool: summarize_youtube_video", "url", videoURL)
 
-	// Call Gemini with the Video URI using Streaming to avoid timeouts
-	iter := client.Models.GenerateContentStream(ctx, config.YouTubeSummarizerToolModel, []*genai.Content{
-		{
-			Parts: []*genai.Part{
-				{
-					FileData: &genai.FileData{
-						MIMEType: "video/*",
-						FileURI:  videoURL,
-					},
-				},
-				{
-					Text: prompts.YouTubeSummarizerInstruction,
-				},
-			},
-		},
-	}, &genai.GenerateContentConfig{
-		ThinkingConfig: &genai.ThinkingConfig{
-			ThinkingLevel: genai.ThinkingLevelLow,
-		},
-	})
+	maxAttempts := 3
+	var lastErr error
 
-	var sb strings.Builder
-	for resp, err := range iter {
-		if err != nil {
-			slog.Error("Error processing stream chunk", "error", err)
-			if strings.Contains(err.Error(), "unexpected EOF") {
-				return "", fmt.Errorf("gemini server timed out while summarizing the video (unexpected EOF): %w", err)
-			}
-			return "", fmt.Errorf("error during generation stream: %w", err)
+	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		if attempt > 1 {
+			slog.Info("Retrying YouTube summarization", "attempt", attempt, "url", videoURL)
 		}
 
-		if len(resp.Candidates) > 0 && len(resp.Candidates[0].Content.Parts) > 0 {
-			for _, part := range resp.Candidates[0].Content.Parts {
-				if part.Text != "" {
-					sb.WriteString(part.Text)
+		// Call Gemini with the Video URI using Streaming to avoid timeouts
+		iter := client.Models.GenerateContentStream(ctx, config.YouTubeSummarizerToolModel, []*genai.Content{
+			{
+				Parts: []*genai.Part{
+					{
+						FileData: &genai.FileData{
+							MIMEType: "video/*",
+							FileURI:  videoURL,
+						},
+					},
+					{
+						Text: prompts.YouTubeSummarizerInstruction,
+					},
+				},
+			},
+		}, &genai.GenerateContentConfig{
+			ThinkingConfig: &genai.ThinkingConfig{
+				ThinkingLevel: genai.ThinkingLevelLow,
+			},
+		})
+
+		var sb strings.Builder
+		streamErr := false
+
+		for resp, err := range iter {
+			if err != nil {
+				slog.Error("Error processing stream chunk", "error", err, "attempt", attempt)
+				lastErr = err
+
+				// If it's a retryable error and we have attempts left, break inner loop to retry
+				if strings.Contains(err.Error(), "unexpected EOF") && attempt < maxAttempts {
+					streamErr = true
+					break
+				}
+				// Otherwise return the error
+				return "", fmt.Errorf("error during generation stream: %w", err)
+			}
+
+			if len(resp.Candidates) > 0 && len(resp.Candidates[0].Content.Parts) > 0 {
+				for _, part := range resp.Candidates[0].Content.Parts {
+					if part.Text != "" {
+						sb.WriteString(part.Text)
+					}
 				}
 			}
 		}
+
+		if streamErr {
+			// Wait before retrying
+			time.Sleep(time.Duration(attempt) * 2 * time.Second)
+			continue
+		}
+
+		summary := sb.String()
+		if summary != "" && summary != "No summary could be generated." {
+			slog.Info("Generated summary", "summary_len", len(summary), "duration", time.Since(startTime), "attempts", attempt)
+			return summary, nil
+		}
+
+		if attempt == maxAttempts {
+			if summary == "" {
+				slog.Warn("No summary could be generated after max attempts", "attempts", attempt)
+				return "No summary could be generated.", nil
+			}
+			return summary, nil
+		}
 	}
 
-	summary := sb.String()
-	if summary != "" {
-		slog.Info("Generated summary", "summary_len", len(summary), "duration", time.Since(startTime))
-		return summary, nil
-	}
-
-	slog.Warn("No summary could be generated", "summary_len", 0)
-	return "No summary could be generated.", nil
+	return "No summary could be generated.", lastErr
 }
