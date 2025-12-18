@@ -2,11 +2,11 @@
 
 [Cloud Build Status](https://console.cloud.google.com/cloud-build/triggers?project=sketchnote-artist-application)
 
-## Overview
+## What Is This?
 
-The **Sketchnote Artist Agent** is an intelligent CLI application that turns YouTube videos into beautiful, hand-drawn style visual summaries (sketchnotes).
+Ever wished you could turn YouTube videos into beautiful, hand-drawn visual summaries that actually help you remember what you watched? That's exactly what **Sketchnote Artist** does.
 
-Built with Go and the [Google Go Agent Development Kit (ADK)](https://github.com/google/adk-go), it demonstrates the power of sequential multi-agent workflows.
+This intelligent application transforms video content into sketchnotes—visual summaries that capture the essence of what matters most. Built with Go and the [Google Go Agent Development Kit (ADK)](https://github.com/google/adk-go), it's a demonstration of how sequential multi-agent workflows can solve real problems in how we consume and retain knowledge.
 
 ## 🚀 How It Works
 
@@ -15,12 +15,12 @@ The application employs a chain of two specialized AI agents:
 1. **The Summarizer Agent**:
     * **Role**: Content Strategist.
     * **Task**: Watches the YouTube video, analyzes the content, and synthesizes a structured "Visual Brief" containing the core thesis, main takeaways, and memorable quotes.
-    * **Model**: Gemini 3.0 Pro.
+    * **Model**: Gemini 3 Flash.
 
 2. **The Artist Agent**:
     * **Role**: Master Sketchnote Artist.
     * **Task**: Interprets the Visual Brief and orchestrates the generation of a high-quality image that mimics alcohol markers and ink on paper.
-    * **Model**: Gemini 2.5 Flash (for reasoning), leveraging the `generate_image` tool which uses Gemini 3.0 Pro Image (Imagen 3).
+    * **Model**: Gemini 3 Flash (for reasoning), leveraging the `generate_image` tool which uses Imagen 3 (Gemini 3 Pro Image).
 
 ## 🏗️ Architecture
 
@@ -56,7 +56,11 @@ The project follows a standard Go layout:
 
 * [Go](https://go.dev/dl/) (version 1.25.3 or later)
 * A Google Cloud Project with the **Gemini API** enabled.
-* A valid **Google Cloud API Key**.
+* A valid **Google Cloud API Key**. You can get one from [Google AI Studio](https://aistudio.google.com/):
+    1. Go to [Google AI Studio](https://aistudio.google.com/).
+    2. Click **Get API key** on the left sidebar.
+    3. Click **Create API key** (you can use an existing Google Cloud project or create a new one).
+    4. Copy the generated key.
 
 ## 📦 Installation & Setup
 
@@ -154,7 +158,7 @@ The server listens on port `8080` by default.
     }' http://localhost:8080/run
     ```
 
-## 🧪 Development & Testing
+## 🧪 Testing
 
 ### Unit Tests
 
