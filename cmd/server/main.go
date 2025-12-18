@@ -3,6 +3,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"log"
 	"log/slog"
@@ -82,6 +83,16 @@ func main() {
 		MemoryService:   memory.InMemoryService(),
 	}
 
+	// Cache version at startup
+	versionBytes, err := os.ReadFile("VERSION")
+	var version string
+	if err != nil {
+		slog.Error("Failed to read VERSION file at startup", "error", err)
+		version = "unknown"
+	} else {
+		version = strings.TrimSpace(string(versionBytes))
+	}
+
 	// Create the REST handler
 	handler := adkrest.NewHandler(config)
 
@@ -145,16 +156,8 @@ func main() {
 
 		// Serve version endpoint
 		if r.URL.Path == "/version" {
-			versionBytes, err := os.ReadFile("VERSION")
-			if err != nil {
-				slog.Error("Failed to read VERSION file", "error", err)
-				http.Error(w, "Failed to read version", http.StatusInternalServerError)
-				return
-			}
-			version := strings.TrimSpace(string(versionBytes))
 			w.Header().Set("Content-Type", "application/json")
-			// Create a precise JSON response without whitespace issues
-			if _, err := io.WriteString(w, `{"version": "`+version+`"}`); err != nil {
+			if err := json.NewEncoder(w).Encode(map[string]string{"version": version}); err != nil {
 				slog.Error("Failed to write version response", "error", err)
 			}
 			return
