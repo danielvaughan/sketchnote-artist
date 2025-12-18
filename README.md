@@ -121,7 +121,7 @@ Your sketchnote gets saved as `generated_result_<timestamp>.png` (or named after
 
 ### Web Mode: For a Friendlier Experience
 
-The project also includes a REST API server with a clean web interface—perfect for anyone who prefers clicking to typing.
+The project includes a server mode that provides both a clean web interface and a REST API—perfect for those who prefer a visual flow or need to integrate the service into other tools.
 
 #### Fire up the server
 
@@ -130,6 +130,21 @@ go run cmd/server/main.go
 ```
 
 The server starts listening on port `8080`.
+
+#### Using the Web Interface
+
+1. **Open your browser** and navigate to `http://localhost:8080`. You'll see a clean, minimal landing page.
+2. **Paste a YouTube URL** into the input field.
+
+![Web UI Landing Page](assets/webui_landing.png)
+
+1. **Press Enter**. The application will start the sequential agent workflow. You can follow the progress in the status messages.
+
+![Web UI Processing](assets/webui_processing.png)
+
+1. **View your Sketchnote**. Once the "Artist" agent completes its work, your final visual summary will appear on the screen, ready for download or sharing.
+
+![Web UI Result](assets/webui_result.png)
 
 #### Using the API
 
