@@ -8,43 +8,45 @@ Ever wished you could turn YouTube videos into beautiful, hand-drawn visual summ
 
 This intelligent application transforms video content into sketchnotes—visual summaries that capture the essence of what matters most. Built with Go and the [Google Go Agent Development Kit (ADK)](https://github.com/google/adk-go), it's a demonstration of how sequential multi-agent workflows can solve real problems in how we consume and retain knowledge.
 
-## 🚀 How It Works
+## 🚀 Under the Hood: The Sequential Agent Workflow
 
-The application employs a chain of two specialized AI agents:
+This isn't just a wrapper around an API call—it's a carefully orchestrated dance between two specialized AI agents, each with distinct expertise:
 
-1. **The Summarizer Agent**:
-    * **Role**: Content Strategist.
-    * **Task**: Watches the YouTube video, analyzes the content, and synthesizes a structured "Visual Brief" containing the core thesis, main takeaways, and memorable quotes.
-    * **Model**: Gemini 3 Flash.
+1. **The Summarizer (Content Strategist)**:
+    * **Brain**: Gemini 3 Flash—chosen for its massive context window and incredible speed.
+    * **What it does**: "Watches" your YouTube video, ingests the entire transcript, and synthesizes a structured "Visual Brief" containing the core thesis, key takeaways, and memorable quotes. Think of it as the curator that decides what matters most.
 
-2. **The Artist Agent**:
-    * **Role**: Master Sketchnote Artist.
-    * **Task**: Interprets the Visual Brief and orchestrates the generation of a high-quality image that mimics alcohol markers and ink on paper.
-    * **Model**: Gemini 3 Flash (for reasoning), leveraging the `generate_image` tool which uses Imagen 3 (Gemini 3 Pro Image).
+2. **The Artist (Master Illustrator)**:
+    * **Brain**: Gemini 3 Flash for reasoning, wielding the `generate_image` tool powered by Imagen 3.
+    * **What it does**: Takes the Visual Brief and transforms it into a high-quality image that genuinely looks like it was drawn with alcohol markers and ink on paper. The quality leap with Imagen 3 is remarkable—it handles text rendering and stylistic nuances with impressive fidelity.
 
-## 🏗️ Architecture
+## 🏗️ How the Pieces Fit Together
+
+Here's the complete workflow visualized:
 
 ```mermaid
 graph TD
     User([User]) -->|YouTube URL| App[Sketchnote Artist App]
-    
+
     subgraph "Sequential Workflow"
         direction TB
         App -->|Step 1: Analyze| Summarizer[Summarizer Agent]
         Summarizer -- "Uses" --> YTTool[YouTube Helper Tool]
         YTTool -.->|Extracts Content| Video[YouTube Video]
         Summarizer -->|Produces| Brief[Visual Brief]
-        
+
         Brief -->|Step 2: Visualize| Artist[Artist Agent]
         Artist -- "Uses" --> GenImgTool[Image Gen Tool]
         GenImgTool -.->|Prompts| Imagen[Imagen 3 Model]
         Artist -->|Produces| Sketchnote[Sketchnote Image]
     end
-    
+
     Sketchnote -->|Saves to| Storage[Local Disk / GCS]
 ```
 
-The project follows a standard Go layout:
+### Code Organization
+
+The project follows a clean, standard Go layout that makes it easy to navigate:
 
 * **`cmd/sketchnote/main.go`**: The main entry point. Initializes the Gemini models, tools, and constructs the `SequentialAgent` workflow.
 * **`internal/agents/`**: Contains the definitions for the Summarizer and Artist agents.
@@ -52,17 +54,21 @@ The project follows a standard Go layout:
 * **`internal/flows/`**: Defines the sequential workflow logic.
 * **`internal/prompts/`**: Contains the system instructions that define the personas.
 
-## 🛠️ Prerequisites
+## 🛠️ What You'll Need
 
-* [Go](https://go.dev/dl/) (version 1.25.3 or later)
-* A Google Cloud Project with the **Gemini API** enabled.
-* A valid **Google Cloud API Key**. You can get one from [Google AI Studio](https://aistudio.google.com/):
-    1. Go to [Google AI Studio](https://aistudio.google.com/).
-    2. Click **Get API key** on the left sidebar.
-    3. Click **Create API key** (you can use an existing Google Cloud project or create a new one).
-    4. Copy the generated key.
+Before you get started, make sure you have:
 
-## 📦 Installation & Setup
+* **[Go](https://go.dev/dl/)** (version 1.25.3 or later) installed
+* **A Google Cloud Project** with the Gemini API enabled
+* **A Google Cloud API Key**—grab one from [Google AI Studio](https://aistudio.google.com/):
+    1. Head to [Google AI Studio](https://aistudio.google.com/)
+    2. Click **Get API key** in the left sidebar
+    3. Click **Create API key** (use an existing project or create a new one)
+    4. Copy the generated key—you'll need it in a moment
+
+## 📦 Getting Started
+
+Ready to generate your first sketchnote? Here's how to get up and running:
 
 1. **Clone the repository:**
 
@@ -71,78 +77,80 @@ The project follows a standard Go layout:
     cd sketchnote-artist
     ```
 
-2. **Configure Environment Variables:**
+2. **Add your API key:**
+
     Create a `.env` file in the root directory:
 
     ```bash
     touch .env
     ```
 
-    Add your API key to the file:
+    Drop your API key into the file:
 
     ```env
     GOOGLE_API_KEY=your_google_api_key_here
     ```
 
-3. **Install Dependencies:**
+3. **Install dependencies:**
 
     ```bash
     go mod download
     ```
 
-## 🎨 Usage
+## 🎨 Running Sketchnote Artist
 
-### CLI Mode
+One of the real strengths of the Go ADK is its versatility—you can run Sketchnote Artist however you prefer.
 
-Run the agent directly using `go run` pointing to the main package:
+### CLI Mode: For Terminal Enthusiasts
+
+Perfect if you live in the terminal. Just fire it up and watch the agents work their magic:
 
 ```bash
 go run ./cmd/sketchnote console
 ```
 
-Enter just the video URL at the User prompt:
+When prompted, paste in a YouTube URL:
 
 ```bash
 User -> https://www.youtube.com/watch?v=dQw4w9WgXcQ
 ```
 
-The agent will:
+Behind the scenes, the Summarizer processes the video, extracts the essential insights, and hands off the Visual Brief to the Artist. The Artist then "draws" the final output, turning abstract concepts into concrete visuals.
 
-1. Process the video.
-2. Print the progress of the agents.
-3. Save the resulting image as `generated_result_<timestamp>.png` (or based on the video title) in the current directory.
+Your sketchnote gets saved as `generated_result_<timestamp>.png` (or named after the video title) right in your current directory.
 
-### REST API Mode
+### Web Mode: For a Friendlier Experience
 
-The application also includes a REST API server.
+The project also includes a REST API server with a clean web interface—perfect for anyone who prefers clicking to typing.
 
-#### Starting the Server
+#### Fire up the server
 
 ```bash
 go run cmd/server/main.go
 ```
 
-The server listens on port `8080` by default.
+The server starts listening on port `8080`.
 
-#### Consuming the API
+#### Using the API
 
-1. **List Available Apps**:
+1. **See what's available:**
 
     ```bash
     curl http://localhost:8080/list-apps
     # Output: ["sketchnote-artist"]
     ```
 
-2. **Create a Session**:
+2. **Start a session:**
 
     ```bash
     curl -X POST http://localhost:8080/apps/sketchnote-artist/users/test-user/sessions
     ```
 
-    Copy the `id` from the JSON response.
+    Grab the `id` from the JSON response.
 
-3. **Run the Agent**:
-    Replace `<session-id>` with the ID from the previous step.
+3. **Generate a sketchnote:**
+
+    Replace `<session-id>` with the ID from step 2:
 
     ```bash
     curl -X POST -H "Content-Type: application/json" -d '{
@@ -162,13 +170,13 @@ The server listens on port `8080` by default.
 
 ### Unit Tests
 
-To run unit tests (skipping slow integration tests):
+Want to verify everything's working? Run the fast unit tests:
 
 ```bash
 go test ./...
 ```
 
-To run all tests including integration tests (requires API key):
+Need the full suite including integration tests? (You'll need your API key set up):
 
 ```bash
 go test -tags=integration ./...
@@ -176,113 +184,118 @@ go test -tags=integration ./...
 
 ### End-to-End (E2E) Tests
 
-Automated end-to-end tests are verified against the deployed `dev` environment.
+The project includes automated end-to-end tests that verify the complete workflow against the deployed environment.
 
-1. **Install Node.js dependencies:**
+1. **Set up the test environment:**
 
     ```bash
     npm install
-    ```
-
-2. **Install Playwright browsers:**
-
-    ```bash
     npx playwright install --with-deps
     ```
 
-3. **Set the Service URL:**
+2. **Point to your service:**
 
-    * **For Local Testing:**
+    For local testing:
 
-        ```bash
-        export SERVICE_URL=http://localhost:8080
-        ```
+    ```bash
+    export SERVICE_URL=http://localhost:8080
+    ```
 
-    * **For Deployed Environment:**
-        Retrieve the URL from Terraform outputs:
+    For testing the deployed environment:
 
-        ```bash
-        export SERVICE_URL=$(cd terraform && terraform output -raw service_url)
-        ```
+    ```bash
+    export SERVICE_URL=$(cd terraform && terraform output -raw service_url)
+    ```
 
-4. **Run the Tests:**
+3. **Run the tests:**
 
-    * **UI Test** (Simulates user interaction in the browser):
+    Test the web interface:
 
-        ```bash
-        npx playwright test e2e/webui.spec.ts
-        ```
+    ```bash
+    npx playwright test e2e/webui.spec.ts
+    ```
 
-    * **API Test** (Directly calls REST endpoints):
+    Test the API directly:
 
-        ```bash
-        npx playwright test e2e/api.spec.ts
-        ```
+    ```bash
+    npx playwright test e2e/api.spec.ts
+    ```
 
-    * **Run All Tests:**
+    Or run everything at once:
 
-        ```bash
-        npx playwright test
-        ```
+    ```bash
+    npx playwright test
+    ```
 
-## ☁️ Deployment (Google Cloud Run)
+## ☁️ Deploying to Google Cloud Run
 
-The infrastructure is managed via **Terraform**.
+Want to host Sketchnote Artist so anyone can use it? The entire infrastructure is managed via Terraform, making deployment straightforward.
 
-### Prerequisites
+### What You'll Need
 
-1. [Install Terraform](https://developer.hashicorp.com/terraform/install).
-2. [Install Google Cloud SDK](https://cloud.google.com/sdk/docs/install).
-3. Authenticate with GCP:
+Before deploying, get these tools set up:
+
+1. [Install Terraform](https://developer.hashicorp.com/terraform/install)
+2. [Install Google Cloud SDK](https://cloud.google.com/sdk/docs/install)
+3. Authenticate with your Google Cloud account:
 
     ```bash
     gcloud auth login
     gcloud auth application-default login
     ```
 
-### Terraform Setup
+### Deploying Your Infrastructure
 
-1. **Navigate to the terraform directory**:
+1. **Jump into the terraform directory:**
 
     ```bash
     cd terraform
     ```
 
-2. **Initialize Terraform**:
+2. **Initialize Terraform:**
 
     ```bash
     terraform init
     ```
 
-3. **Configure Variables**:
-    Copy the template:
+3. **Configure your deployment:**
+
+    Start with the template:
 
     ```bash
     cp terraform.tfvars.template terraform.tfvars
     ```
 
-    Edit `terraform.tfvars` and fill in your details:
-    * `project_id`: Your GCP Project ID.
-    * `domain`: The domain for your load balancer (e.g., `app.example.com`).
-    * `allowed_user_emails`: List of emails allowed to access the app via IAP.
-    * `iap_client_id` & `iap_client_secret`: From GCP Console -> APIs & Services -> Credentials -> OAuth 2.0 Client IDs.
-    * `google_api_key`: Your Gemini API Key.
+    Open `terraform.tfvars` and customize these values:
+    * `project_id`: Your Google Cloud Project ID
+    * `domain`: Your custom domain (e.g., `app.example.com`)
+    * `allowed_user_emails`: Who gets access through Identity-Aware Proxy
+    * `iap_client_id` & `iap_client_secret`: Get these from GCP Console → APIs & Services → Credentials → OAuth 2.0 Client IDs
+    * `google_api_key`: Your Gemini API Key
 
-4. **Deploy**:
+4. **Deploy everything:**
 
     ```bash
     terraform apply
     ```
 
-    Confirm the plan by typing `yes`.
+    Review the plan and type `yes` to confirm.
 
-5. **Post-Deployment**:
-    * Update your DNS A record to point to the `load_balancer_ip` output by Terraform.
-    * Add the callback URL to your OAuth Client ID in GCP Console: `https://iap.googleapis.com/v1/oauth/clientIds/YOUR_CLIENT_ID:handleRedirect`.
+5. **Finish the setup:**
+    * Point your domain's DNS A record to the `load_balancer_ip` from Terraform's output
+    * Add the OAuth callback URL in GCP Console: `https://iap.googleapis.com/v1/oauth/clientIds/YOUR_CLIENT_ID:handleRedirect`
 
-## 🖼️ Example Output
+## 🖼️ See It in Action
+
+Instead of a wall of text or fragmented notes, you get clean, visual artifacts like this:
 
 ![Example Sketchnote](assets/example_sketchnote.png)
+
+## 🚀 Give It a Try
+
+Whether you want to generate sketchnotes for your own learning or dive into the code to see how a multi-agent system is structured in Go, this project is ready for you. Clone it, run it locally, and let AI sketch your next learning session.
+
+Questions? Issues? Contributions? Head over to the [GitHub repository](https://github.com/danielvaughan/sketchnote-artist) and get involved!
 
 ## 📄 License
 
