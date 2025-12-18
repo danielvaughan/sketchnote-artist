@@ -77,6 +77,7 @@ The agent is designed to accept natural language commands.
 * **GenAI Client**: `google.golang.org/genai`
 * **Pattern**: Sequential Multi-Agent
 * **Commits**: Always use [Git Commit Guidelines](knowledge/processes/commits.md) when making commits.
+* **Pull Requests**: Always use [Pull Request Procedure](knowledge/processes/pull_requests.md) when creating PRs.
 * **Testing**: Always use [Testing Processes](knowledge/processes/testing.md) when asked to run tests.
 * **Local Running**: Always use [Local Development](knowledge/processes/local-running.md) when asked to run locally.
 
