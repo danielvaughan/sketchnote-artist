@@ -106,9 +106,7 @@ The agent will:
 
 1. Process the video.
 2. Print the progress of the agents.
-3. Process the video.
-4. Print the progress of the agents.
-5. Save the resulting image as `generated_result_<timestamp>.png` (or based on the video title) in the current directory.
+3. Save the resulting image as `generated_result_<timestamp>.png` (or based on the video title) in the current directory.
 
 ### REST API Mode
 

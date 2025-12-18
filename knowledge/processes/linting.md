@@ -6,9 +6,9 @@ This project uses several linting tools to ensure code quality, consistency, and
 
 | Language/Type | Tool | Configuration |
 | :--- | :--- | :--- |
-| **Go** | [golangci-lint](https://golangci-lint.run/) | [.golangci.yml](file:///Users/danielvaughan/Development/git/sketchnote-artist/.golangci.yml) |
-| **Dockerfile** | [hadolint](https://github.com/hadolint/hadolint) | [.hadolint.yaml](file:///Users/danielvaughan/Development/git/sketchnote-artist/.hadolint.yaml) |
-| **Markdown** | [markdownlint](https://github.com/igorshubovych/markdownlint-cli) | [.markdownlint.json](file:///Users/danielvaughan/Development/git/sketchnote-artist/.markdownlint.json) |
+| **Go** | [golangci-lint](https://golangci-lint.run/) | [.golangci.yml](../../.golangci.yml) |
+| **Dockerfile** | [hadolint](https://github.com/hadolint/hadolint) | [.hadolint.yaml](../../.hadolint.yaml) |
+| **Markdown** | [markdownlint](https://github.com/igorshubovych/markdownlint-cli) | [.markdownlint.json](../../.markdownlint.json) |
 | **Secrets** | [gitleaks](https://github.com/gitleaks/gitleaks) | Default (.git/hooks or pre-commit) |
 | **Terraform** | [tflint](https://github.com/terraform-linters/tflint) | Via pre-commit |
 
@@ -63,7 +63,7 @@ pre-commit run --all-files
 
 ## CI/CD Pipeline
 
-Linting is enforced in the Google Cloud Build pipeline as defined in [cloudbuild.yaml](file:///Users/danielvaughan/Development/git/sketchnote-artist/cloudbuild.yaml). The build will fail if any linter reports an error.
+Linting is enforced in the Google Cloud Build pipeline as defined in [cloudbuild.yaml](../../cloudbuild.yaml). The build will fail if any linter reports an error.
 
 The CI/CD pipeline runs:
 
