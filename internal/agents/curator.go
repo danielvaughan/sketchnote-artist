@@ -62,6 +62,7 @@ func NewCurator(ctx context.Context, apiKey string, store storage.Store) (agent.
 				}
 			}
 			input = strings.TrimSpace(input)
+			input = NormalizeYouTubeURL(input)
 
 			// Logging
 			slog.Info("Agent Input", "agent", "Curator", "input", input)
@@ -122,4 +123,24 @@ func NewCurator(ctx context.Context, apiKey string, store storage.Store) (agent.
 func ValidateYouTubeURL(input string) bool {
 	ytRegex := regexp.MustCompile(`^(https?://)?(www\.)?(youtube\.com|youtu\.be)/.+$`)
 	return ytRegex.MatchString(input)
+}
+
+// NormalizeYouTubeURL extracts the video ID and returns a shortened youtu.be URL.
+// If no ID is found, it returns the original input.
+func NormalizeYouTubeURL(input string) string {
+	id := ExtractVideoID(input)
+	if id == "" {
+		return input
+	}
+	return fmt.Sprintf("https://youtu.be/%s", id)
+}
+
+// ExtractVideoID returns the 11-character YouTube video ID from various URL formats.
+func ExtractVideoID(url string) string {
+	regExp := regexp.MustCompile(`(?i)(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})`)
+	match := regExp.FindStringSubmatch(url)
+	if len(match) > 1 {
+		return match[1]
+	}
+	return ""
 }

@@ -54,6 +54,12 @@ async function generateSketchnote() {
     // 2. Start Streaming Request
     statusMsg.innerText = "Connecting to agent...";
 
+    // Use shortened URL for agent submission if possible
+    let submissionUrl = videoUrl;
+    if (videoId) {
+      submissionUrl = `https://youtu.be/${videoId}`;
+    }
+
     const response = await fetch('/run_sse', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -63,7 +69,7 @@ async function generateSketchnote() {
         sessionId: sessionId,
         newMessage: {
           role: "user",
-          parts: [{ text: videoUrl }]
+          parts: [{ text: submissionUrl }]
         },
         streaming: true
       })
