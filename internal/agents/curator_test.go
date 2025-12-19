@@ -139,3 +139,66 @@ func TestCurator_Run_GracefulFailure(t *testing.T) {
 		t.Errorf("Expected event with message containing %q, but not found", expected)
 	}
 }
+func TestNormalizeYouTubeURL(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{
+			name:  "Standard Long URL",
+			input: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+			want:  "https://youtu.be/dQw4w9WgXcQ",
+		},
+		{
+			name:  "Long URL with extra params",
+			input: "https://www.youtube.com/watch?v=dQw4w9WgXcQ&feature=emb_logo",
+			want:  "https://youtu.be/dQw4w9WgXcQ",
+		},
+		{
+			name:  "Short URL",
+			input: "https://youtu.be/dQw4w9WgXcQ",
+			want:  "https://youtu.be/dQw4w9WgXcQ",
+		},
+		{
+			name:  "Embed URL",
+			input: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+			want:  "https://youtu.be/dQw4w9WgXcQ",
+		},
+		{
+			name:  "Invalid URL",
+			input: "https://www.google.com",
+			want:  "https://www.google.com",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := NormalizeYouTubeURL(tt.input); got != tt.want {
+				t.Errorf("NormalizeYouTubeURL() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestExtractVideoID(t *testing.T) {
+	tests := []struct {
+		name string
+		url  string
+		want string
+	}{
+		{"Standard", "https://www.youtube.com/watch?v=dQw4w9WgXcQ", "dQw4w9WgXcQ"},
+		{"Short", "https://youtu.be/dQw4w9WgXcQ", "dQw4w9WgXcQ"},
+		{"Embed", "https://www.youtube.com/embed/dQw4w9WgXcQ", "dQw4w9WgXcQ"},
+		{"Extra Params", "https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=10s", "dQw4w9WgXcQ"},
+		{"Invalid", "https://www.google.com", ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := ExtractVideoID(tt.url); got != tt.want {
+				t.Errorf("ExtractVideoID() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
