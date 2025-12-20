@@ -10,7 +10,7 @@ resource "google_sql_database_instance" "default" {
     }
   }
 
-  deletion_protection = false # Set to true for production
+  deletion_protection = local.is_prod
 }
 
 resource "google_sql_database" "default" {
@@ -22,6 +22,19 @@ resource "google_sql_user" "default" {
   name     = "sketchnote-user"
   instance = google_sql_database_instance.default.name
   password = var.db_password
+}
+
+# Store database password in Secret Manager
+resource "google_secret_manager_secret" "db_password" {
+  secret_id = "DB_PASS-${local.env}"
+  replication {
+    auto {}
+  }
+}
+
+resource "google_secret_manager_secret_version" "db_password" {
+  secret      = google_secret_manager_secret.db_password.id
+  secret_data = var.db_password
 }
 
 variable "db_password" {

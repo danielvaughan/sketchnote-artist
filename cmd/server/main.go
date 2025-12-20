@@ -89,7 +89,7 @@ func main() {
 		dbConn := os.Getenv("DB_CONNECTION_NAME")
 
 		dsn := fmt.Sprintf("user=%s password=%s database=%s host=/cloudsql/%s", dbUser, dbPass, dbName, dbConn)
-		slog.Info("Initializing PostgreSQL Session Service", "dsn", dsn)
+		slog.Info("Initializing PostgreSQL Session Service", "user", dbUser, "database", dbName, "connectionName", dbConn)
 		dbService, err := database.NewSessionService(postgres.Open(dsn))
 		if err != nil {
 			slog.Error("Failed to initialize PostgreSQL session service", "error", err)

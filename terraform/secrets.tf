@@ -8,6 +8,11 @@ resource "google_secret_manager_secret" "google_api_key" {
   depends_on = [google_project_service.secret_manager_api]
 }
 
+resource "google_secret_manager_secret_version" "google_api_key" {
+  secret      = google_secret_manager_secret.google_api_key.id
+  secret_data = var.google_api_key
+}
+
 resource "google_secret_manager_secret_iam_member" "cloudbuild_secret_accessor" {
   project   = var.project_id
   secret_id = google_secret_manager_secret.google_api_key.secret_id

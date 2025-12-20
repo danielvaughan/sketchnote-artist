@@ -17,8 +17,13 @@ resource "google_cloud_run_v2_service" "default" {
         }
       }
       env {
-        name  = "GOOGLE_API_KEY"
-        value = var.google_api_key
+        name = "GOOGLE_API_KEY"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.google_api_key.secret_id
+            version = "latest"
+          }
+        }
       }
       env {
         name  = "DEPLOYMENT_MODE"
@@ -45,8 +50,13 @@ resource "google_cloud_run_v2_service" "default" {
         value = google_sql_user.default.name
       }
       env {
-        name  = "DB_PASS"
-        value = var.db_password
+        name = "DB_PASS"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.db_password.secret_id
+            version = "latest"
+          }
+        }
       }
       env {
         name  = "DB_NAME"
@@ -105,4 +115,16 @@ resource "google_cloud_run_v2_service_iam_member" "noauth" {
   name     = google_cloud_run_v2_service.default.name
   role     = "roles/run.invoker"
   member   = "allUsers"
+}
+
+resource "google_secret_manager_secret_iam_member" "run_sa_db_pass_accessor" {
+  secret_id = google_secret_manager_secret.db_password.secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.run_sa.email}"
+}
+
+resource "google_secret_manager_secret_iam_member" "run_sa_google_api_key_accessor" {
+  secret_id = google_secret_manager_secret.google_api_key.secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.run_sa.email}"
 }

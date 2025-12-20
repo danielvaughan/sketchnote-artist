@@ -17,10 +17,10 @@ I have shared the full development story in a blog post and made the source code
 
 ---
 
-📖 **Read the Blog Post**: [documentation/blog-post.md](file:///Users/danielvaughan/Development/git/sketchnote-artist/documentation/blog-post.md)
+📖 **Read the Blog Post**: [blog-post.md](blog-post.md)
 💻 **Git Repo**: [https://github.com/danielvaughan/sketchnote-artist](https://github.com/danielvaughan/sketchnote-artist)
 🌐 **Live Demo**: [https://sketchnotes.danielvaughan.com](https://sketchnotes.danielvaughan.com)
 
 Check out this example sketchnote generated from a video! 👇
 
-![Example Sketchnote](file:///Users/danielvaughan/Development/git/sketchnote-artist/sketchnotes/The_Future_of_AI_Beyond_Scaling__Towards_Super-Intelligent_Learning_in_large_bold_hand-lettered_bloc.png)
+![Example Sketchnote](../sketchnotes/The_Future_of_AI_Beyond_Scaling__Towards_Super-Intelligent_Learning_in_large_bold_hand-lettered_bloc.png)
