@@ -199,6 +199,22 @@ func main() {
 			return
 		}
 
+		// Serve user identity endpoint
+		if r.URL.Path == "/me" {
+			userEmail := r.Header.Get("x-goog-authenticated-user-email")
+			if userEmail != "" {
+				// Strip "accounts.google.com:" prefix
+				userEmail = strings.TrimPrefix(userEmail, "accounts.google.com:")
+			} else {
+				userEmail = "local-user"
+			}
+			w.Header().Set("Content-Type", "application/json")
+			if err := json.NewEncoder(w).Encode(map[string]string{"email": userEmail}); err != nil {
+				slog.Error("Failed to write user identity response", "error", err)
+			}
+			return
+		}
+
 		// Fallback to ADK API handler
 		handler.ServeHTTP(w, r)
 	})

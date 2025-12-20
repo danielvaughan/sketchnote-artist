@@ -1,6 +1,6 @@
 const API_BASE = window.location.origin;
 const APP_NAME = "sketchnote-artist";
-const USER_ID = "web-guest";
+let USER_ID = "local-user"; // Default to local-user, updated from server
 
 async function generateSketchnote() {
   const urlInput = document.getElementById('youtubeUrl');
@@ -298,6 +298,17 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
+
+  // Fetch user identity
+  fetch('/me')
+    .then(r => r.json())
+    .then(data => {
+      if (data.email) {
+        USER_ID = data.email;
+        console.log("Authenticated as:", USER_ID);
+      }
+    })
+    .catch(e => console.warn("Failed to load user identity", e));
 
   fetch('/version')
     .then(r => r.json())
