@@ -32,8 +32,35 @@ resource "google_cloud_run_v2_service" "default" {
         name  = "GCS_BUCKET_IMAGES"
         value = google_storage_bucket.images.name
       }
+      env {
+        name  = "GOOGLE_CLOUD_PROJECT"
+        value = var.project_id
+      }
+      env {
+        name  = "GOOGLE_CLOUD_LOCATION"
+        value = var.region
+      }
+      env {
+        name  = "DB_USER"
+        value = google_sql_user.default.name
+      }
+      env {
+        name  = "DB_PASS"
+        value = var.db_password
+      }
+      env {
+        name  = "DB_NAME"
+        value = google_sql_database.default.name
+      }
+      env {
+        name  = "DB_CONNECTION_NAME"
+        value = google_sql_database_instance.default.connection_name
+      }
     }
     service_account = google_service_account.run_sa.email
+    vpc_access {
+      connector = null # Cloud SQL Auth Proxy doesn't strictly need a connector if ipv4 is enabled
+    }
   }
 }
 
@@ -52,6 +79,12 @@ resource "google_storage_bucket_iam_member" "run_sa_images_creator" {
   bucket = google_storage_bucket.images.name
   role   = "roles/storage.objectCreator"
   member = "serviceAccount:${google_service_account.run_sa.email}"
+}
+
+resource "google_project_iam_member" "run_sa_cloudsql_client" {
+  project = var.project_id
+  role    = "roles/cloudsql.client"
+  member  = "serviceAccount:${google_service_account.run_sa.email}"
 }
 
 

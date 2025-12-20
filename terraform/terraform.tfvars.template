@@ -11,3 +11,6 @@ google_api_key = "REPLACE_WITH_GOOGLE_API_KEY"
 
 # Optional
 # image_tag = "v1"
+
+# Database
+db_password = "REPLACE_WITH_DB_PASSWORD"

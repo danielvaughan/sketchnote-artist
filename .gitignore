@@ -72,3 +72,6 @@ test-results/
 # Private files and directories
 /private/
 /temp/
+
+# SQLite database
+sketchnote.db

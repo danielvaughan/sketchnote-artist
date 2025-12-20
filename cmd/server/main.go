@@ -4,6 +4,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"log/slog"
@@ -23,6 +24,10 @@ import (
 
 	"github.com/danielvaughan/sketchnote-artist/internal/app"
 	"github.com/danielvaughan/sketchnote-artist/internal/storage"
+
+	"google.golang.org/adk/session/database"
+	"gorm.io/driver/postgres"
+	"gorm.io/driver/sqlite"
 )
 
 func main() {
@@ -75,10 +80,41 @@ func main() {
 	}
 	slog.Info("Agent created successfully")
 
-	// Configure the launcher with in-memory services
+	// Configure the launcher services
+	var sessionService session.Service
+	if os.Getenv("DEPLOYMENT_MODE") == "cloud_run" {
+		dbUser := os.Getenv("DB_USER")
+		dbPass := os.Getenv("DB_PASS")
+		dbName := os.Getenv("DB_NAME")
+		dbConn := os.Getenv("DB_CONNECTION_NAME")
+
+		dsn := fmt.Sprintf("user=%s password=%s database=%s host=/cloudsql/%s", dbUser, dbPass, dbName, dbConn)
+		slog.Info("Initializing PostgreSQL Session Service", "dsn", dsn)
+		dbService, err := database.NewSessionService(postgres.Open(dsn))
+		if err != nil {
+			slog.Error("Failed to initialize PostgreSQL session service", "error", err)
+			os.Exit(1)
+		}
+		sessionService = dbService
+	} else {
+		slog.Info("Initializing SQLite Session Service")
+		dbService, err := database.NewSessionService(sqlite.Open("sketchnote.db"))
+		if err != nil {
+			slog.Error("Failed to initialize SQLite session service", "error", err)
+			os.Exit(1)
+		}
+		sessionService = dbService
+	}
+
+	// Ensure the database schema is up to date
+	if err := database.AutoMigrate(sessionService); err != nil {
+		slog.Error("Failed to run database auto-migration", "error", err)
+		os.Exit(1)
+	}
+
 	config := &launcher.Config{
 		AgentLoader:     agent.NewSingleLoader(agentInstance),
-		SessionService:  session.InMemoryService(),
+		SessionService:  sessionService,
 		ArtifactService: artifact.InMemoryService(),
 		MemoryService:   memory.InMemoryService(),
 	}
@@ -93,8 +129,8 @@ func main() {
 		version = strings.TrimSpace(string(versionBytes))
 	}
 
-	// Create the REST handler
-	handler := adkrest.NewHandler(config)
+	// Start the server
+	handler := adkrest.NewHandler(config, 30*time.Second)
 
 	port := os.Getenv("PORT")
 	if port == "" {
