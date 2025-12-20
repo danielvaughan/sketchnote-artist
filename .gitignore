@@ -75,3 +75,4 @@ test-results/
 
 # SQLite database
 sketchnote.db
+cloud-sql-proxy
