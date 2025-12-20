@@ -56,10 +56,20 @@ resource "google_cloud_run_v2_service" "default" {
         name  = "DB_CONNECTION_NAME"
         value = google_sql_database_instance.default.connection_name
       }
+      volume_mounts {
+        name       = "cloudsql"
+        mount_path = "/cloudsql"
+      }
     }
     service_account = google_service_account.run_sa.email
     vpc_access {
       connector = null # Cloud SQL Auth Proxy doesn't strictly need a connector if ipv4 is enabled
+    }
+    volumes {
+      name = "cloudsql"
+      cloud_sql_instance {
+        instances = [google_sql_database_instance.default.connection_name]
+      }
     }
   }
 }
