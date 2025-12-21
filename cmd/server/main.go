@@ -28,14 +28,16 @@ import (
 	"google.golang.org/adk/session/database"
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 func main() {
 	ctx := context.Background()
 
 	// Initialize structured logging to stdout for server
-	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-	slog.SetDefault(logger)
+	slogLogger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	slog.SetDefault(slogLogger)
 
 	// Load .env file
 	if err := godotenv.Load(); err != nil {
@@ -90,7 +92,9 @@ func main() {
 
 		dsn := fmt.Sprintf("user=%s password=%s database=%s host=/cloudsql/%s", dbUser, dbPass, dbName, dbConn)
 		slog.Info("Initializing PostgreSQL Session Service", "user", dbUser, "database", dbName, "connectionName", dbConn)
-		dbService, err := database.NewSessionService(postgres.Open(dsn))
+		dbService, err := database.NewSessionService(postgres.Open(dsn), &gorm.Config{
+			Logger: logger.Default.LogMode(logger.Silent),
+		})
 		if err != nil {
 			slog.Error("Failed to initialize PostgreSQL session service", "error", err)
 			os.Exit(1)
@@ -98,7 +102,9 @@ func main() {
 		sessionService = dbService
 	} else {
 		slog.Info("Initializing SQLite Session Service")
-		dbService, err := database.NewSessionService(sqlite.Open("sketchnote.db"))
+		dbService, err := database.NewSessionService(sqlite.Open("sketchnote.db"), &gorm.Config{
+			Logger: logger.Default.LogMode(logger.Silent),
+		})
 		if err != nil {
 			slog.Error("Failed to initialize SQLite session service", "error", err)
 			os.Exit(1)

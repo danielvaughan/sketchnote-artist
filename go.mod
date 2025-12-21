@@ -9,6 +9,7 @@ require (
 	google.golang.org/genai v1.40.0
 	gorm.io/driver/postgres v1.5.11
 	gorm.io/driver/sqlite v1.6.0
+	gorm.io/gorm v1.31.0
 )
 
 require (
@@ -73,7 +74,6 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251014184007-4626949a642f // indirect
 	google.golang.org/grpc v1.76.0 // indirect
 	google.golang.org/protobuf v1.36.10 // indirect
-	gorm.io/gorm v1.31.0 // indirect
 	rsc.io/omap v1.2.0 // indirect
 	rsc.io/ordered v1.1.1 // indirect
 )
