@@ -113,6 +113,14 @@ async function generateSketchnote() {
               const data = JSON.parse(line.substring(jsonStart));
               if (data.message) {
                 statusMsg.innerText = data.message;
+
+                // Fast-path: Check status messages for image filenames
+                if (data.message.includes('.png')) {
+                  const match = data.message.match(/[\w\s.-]+\.png/);
+                  if (match) {
+                    loadImage(match[0].trim(), resultImage, progressSection, resultSection, statusMsg);
+                  }
+                }
               }
             } catch (e) {
               console.warn("Failed to parse status event", e);
@@ -171,9 +179,40 @@ async function generateSketchnote() {
   }
 }
 
+function loadImage(filename, resultImage, progressSection, resultSection, statusMsg) {
+  const imagePath = `/images/${filename}`;
+
+  // Avoid re-triggering if already set to this path
+  if (resultImage.src.endsWith(imagePath) && !resultSection.classList.contains('hidden')) return;
+
+  console.log("Attempting to load image:", imagePath);
+
+  const img = new Image();
+  img.onload = () => {
+    resultImage.src = imagePath;
+    progressSection.classList.add('hidden');
+    resultSection.classList.remove('hidden');
+    statusMsg.innerText = "Sketchnote created successfully!";
+    statusMsg.style.color = "var(--text-secondary)";
+    console.log("Image loaded successfully:", imagePath);
+  };
+  img.onerror = () => {
+    // Only show error if we haven't successfully loaded it yet
+    if (resultSection.classList.contains('hidden')) {
+      console.error("Failed to load image:", imagePath);
+      statusMsg.innerText = "Image generated but failed to load.";
+      statusMsg.style.color = "var(--accent-color)";
+    }
+  };
+  img.src = imagePath;
+}
+
 function handleAgentEvent(event, accumulatedText, statusMsg, resultImage, progressSection, resultSection) {
   // Debug: Log every event to inspect structure
   console.log("Received Event:", event);
+
+  // If we've already succeeded, don't let further text fragments mess up the UI
+  if (!resultSection.classList.contains('hidden')) return;
 
   // 1. Model Call (Thinking) - Check for ADK 'modelCall' structure
   if (event.models && event.models.length > 0) {
@@ -201,7 +240,11 @@ function handleAgentEvent(event, accumulatedText, statusMsg, resultImage, progre
 
       // 3. General Text Parts (Feedback from Agent)
       if (part.text && !part.text.includes('.png')) {
-        statusMsg.innerText = part.text;
+        // Only update status if the text is long enough to be meaningful (avoid fragments)
+        // or if it's the beginning of a section.
+        if (part.text.length > 20 || part.text.includes("Title Text:")) {
+          statusMsg.innerText = part.text;
+        }
 
         // Detect error phrases to highlight in red
         if (part.text.toLowerCase().includes("can't process") ||
@@ -217,36 +260,11 @@ function handleAgentEvent(event, accumulatedText, statusMsg, resultImage, progre
       }
 
       // 4. Check Accumulated Text for Image Filename
-      if (part.text || accumulatedText) {
-        // Using the accumulated text passed from the stream reader
-        if (accumulatedText && accumulatedText.includes('.png')) {
-          // Found image path!
-          const Match = accumulatedText.match(/[\w\s-]+\.png/);
-
-          if (Match) {
-            const cleanFilename = Match[0].trim();
-            const imagePath = `/images/${cleanFilename}`;
-
-            // Avoid re-triggering if already set
-            if (resultImage.src.endsWith(imagePath)) return;
-
-            console.log("Loading Image:", imagePath);
-
-            const img = new Image();
-            img.onload = () => {
-              resultImage.src = imagePath;
-              progressSection.classList.add('hidden');
-              resultSection.classList.remove('hidden');
-              statusMsg.innerText = "Sketchnote created successfully!";
-              statusMsg.style.color = "var(--text-secondary)";
-            };
-            img.onerror = () => {
-              console.error("Failed to load image:", imagePath);
-              statusMsg.innerText = "Image generated but failed to load.";
-              statusMsg.style.color = "var(--accent-color)";
-            };
-            img.src = imagePath;
-          }
+      if (accumulatedText && accumulatedText.includes('.png')) {
+        // Found image path!
+        const match = accumulatedText.match(/[\w\s.-]+\.png/);
+        if (match) {
+          loadImage(match[0].trim(), resultImage, progressSection, resultSection, statusMsg);
         }
       }
     }
