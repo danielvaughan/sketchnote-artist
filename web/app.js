@@ -20,8 +20,8 @@ async function generateSketchnote() {
   }
 
   // Reset UI State
+  // Display state will be shown only if video is valid or processing starts
   const displayStage = document.getElementById('displayStage');
-  displayStage.classList.remove('hidden');
 
   idleState.classList.add('hidden');
   resultSection.classList.add('hidden');
@@ -29,6 +29,7 @@ async function generateSketchnote() {
   statusMsg.innerText = "Initializing...";
   statusMsg.style.color = "var(--text-secondary)";
   generateBtn.disabled = true;
+  document.getElementById('clearBtn').classList.add('hidden'); // Hide clear during generation
 
   // Handle Video Player
   const videoId = extractVideoID(videoUrl);
@@ -36,6 +37,7 @@ async function generateSketchnote() {
     const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&origin=${window.location.origin}`;
     document.getElementById('youtubeEmbed').src = embedUrl;
     document.getElementById('videoPlayerContainer').classList.remove('hidden');
+    displayStage.classList.remove('hidden'); // Show stage if video is valid
   }
 
   // Track duration for debugging timeouts
@@ -140,6 +142,15 @@ async function generateSketchnote() {
       }
     }
 
+    // After stream completes, if we are still 'watching', show a fallback message
+    if (resultSection.classList.contains('hidden')) {
+      progressSection.classList.add('hidden');
+      if (statusMsg.innerText === "Watching video..." || statusMsg.innerText === "Initializing...") {
+        statusMsg.innerText = "Process ended without creating a sketchnote.";
+        statusMsg.style.color = "var(--accent-color)";
+      }
+    }
+
   } catch (error) {
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
     console.error(error);
@@ -156,6 +167,7 @@ async function generateSketchnote() {
     idleState.classList.remove('hidden');
   } finally {
     generateBtn.disabled = false;
+    toggleClearBtn(); // Restore clear button state
   }
 }
 
@@ -166,6 +178,7 @@ function handleAgentEvent(event, accumulatedText, statusMsg, resultImage, progre
   // 1. Model Call (Thinking) - Check for ADK 'modelCall' structure
   if (event.models && event.models.length > 0) {
     statusMsg.innerText = "Curator is analyzing video...";
+    statusMsg.style.color = "var(--text-secondary)";
   }
 
   // Check content parts for Tool Calls and Text
@@ -179,44 +192,58 @@ function handleAgentEvent(event, accumulatedText, statusMsg, resultImage, progre
 
         if (toolName.includes('summarize')) {
           statusMsg.innerText = "Summarizing video content...";
+          document.getElementById('displayStage').classList.remove('hidden'); // Ensure visible when tool starts
         } else if (toolName.includes('generate_image')) {
           statusMsg.innerText = "Artist is sketching...";
         }
+        statusMsg.style.color = "var(--text-secondary)";
       }
 
-      // 3. Check Accumulated Text for Image Filename
+      // 3. General Text Parts (Feedback from Agent)
+      if (part.text && !part.text.includes('.png')) {
+        statusMsg.innerText = part.text;
+
+        // Detect error phrases to highlight in red
+        if (part.text.toLowerCase().includes("can't process") ||
+          part.text.toLowerCase().includes("invalid") ||
+          part.text.toLowerCase().includes("error")) {
+          statusMsg.style.color = "var(--accent-color)";
+          progressSection.classList.add('hidden'); // Stop animation if it's an error
+          document.getElementById('idleState').classList.remove('hidden');
+          document.getElementById('displayStage').classList.add('hidden'); // Hide stage on validation error
+        } else {
+          statusMsg.style.color = "var(--text-secondary)";
+        }
+      }
+
+      // 4. Check Accumulated Text for Image Filename
       if (part.text || accumulatedText) {
         // Using the accumulated text passed from the stream reader
         if (accumulatedText && accumulatedText.includes('.png')) {
           // Found image path!
-          // Use regex on the FULL accumulated text
-          // Updated regex to include \s to allow spaces in filenames
           const Match = accumulatedText.match(/[\w\s-]+\.png/);
-
-          // Only proceed if we found a match AND it's a new image (simple check to avoid repeated loads or complex state)
-          // For now, naive check is fine as long as we clear state or handle it.
-          // Since the stream ends shortly after, multiple triggers of this block are acceptable as they point to the same image.
 
           if (Match) {
             const cleanFilename = Match[0].trim();
             const imagePath = `/images/${cleanFilename}`;
 
-            // Avoid re-triggering if already set (optimization)
+            // Avoid re-triggering if already set
             if (resultImage.src.endsWith(imagePath)) return;
 
             console.log("Loading Image:", imagePath);
 
-            // Preload image to ensure it's ready
             const img = new Image();
             img.onload = () => {
               resultImage.src = imagePath;
               progressSection.classList.add('hidden');
               resultSection.classList.remove('hidden');
               statusMsg.innerText = "Sketchnote created successfully!";
+              statusMsg.style.color = "var(--text-secondary)";
             };
             img.onerror = () => {
               console.error("Failed to load image:", imagePath);
               statusMsg.innerText = "Image generated but failed to load.";
+              statusMsg.style.color = "var(--accent-color)";
             };
             img.src = imagePath;
           }
@@ -268,17 +295,29 @@ function resetUI() {
   const statusMsg = document.getElementById('statusMessage');
   const videoPlayerContainer = document.getElementById('videoPlayerContainer');
   const displayStage = document.getElementById('displayStage');
+  const clearBtn = document.getElementById('clearBtn');
 
   urlInput.value = "";
   resultSection.classList.add('hidden');
   progressSection.classList.add('hidden');
   videoPlayerContainer.classList.add('hidden');
   displayStage.classList.add('hidden'); // Hide the entire stage
-  youtubeEmbed.src = ""; // Stop video
+  document.getElementById('youtubeEmbed').src = ""; // Stop video
   idleState.classList.remove('hidden');
+  clearBtn.classList.add('hidden'); // Hide clear button
 
   statusMsg.innerText = "Ready to create...";
   statusMsg.style.color = "var(--text-secondary)";
+}
+
+function toggleClearBtn() {
+  const urlInput = document.getElementById('youtubeUrl');
+  const clearBtn = document.getElementById('clearBtn');
+  if (urlInput.value.length > 0) {
+    clearBtn.classList.remove('hidden');
+  } else {
+    clearBtn.classList.add('hidden');
+  }
 }
 
 function extractVideoID(url) {
@@ -297,6 +336,7 @@ document.addEventListener('DOMContentLoaded', () => {
         generateSketchnote();
       }
     });
+    urlInput.addEventListener('input', toggleClearBtn);
   }
 
   // Fetch user identity

@@ -5,10 +5,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sketchnote Artist</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=2">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <!-- Material Icons for UI elements -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✍️</text></svg>">
@@ -27,9 +27,11 @@
     <div class="input-section">
       <div class="search-box">
         <input type="text" id="youtubeUrl" placeholder="Paste YouTube Link..." autocomplete="off">
+        <button id="clearBtn" class="clear-btn hidden" title="Clear" onclick="resetUI()">
+          <span class="material-icons">close</span>
+        </button>
         <button id="generateBtn" class="search-btn" title="Create Sketchnote" onclick="generateSketchnote()">
           <span class="material-icons">arrow_forward</span>
-
         </button>
       </div>
       <p id="statusMessage" class="status-text">Ready to create...</p>
@@ -59,9 +61,6 @@
             <button class="action-btn" onclick="downloadImage()" title="Download">
               <span class="material-icons">download</span>
             </button>
-            <button class="action-btn" onclick="resetUI()" title="Close">
-              <span class="material-icons">close</span>
-            </button>
             <button class="action-btn" onclick="shareImage()" title="Share Link">
               <span class="material-icons">share</span>
             </button>
@@ -82,7 +81,7 @@
     </footer>
   </main>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=2"></script>
 </body>
 
 </html>
