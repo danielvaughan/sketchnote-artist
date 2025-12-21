@@ -136,7 +136,7 @@ func main() {
 	}
 
 	// Start the server
-	handler := adkrest.NewHandler(config, 30*time.Second)
+	handler := adkrest.NewHandler(config, 5*time.Minute)
 
 	port := os.Getenv("PORT")
 	if port == "" {
