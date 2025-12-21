@@ -240,9 +240,11 @@ function handleAgentEvent(event, accumulatedText, statusMsg, resultImage, progre
 
       // 3. General Text Parts (Feedback from Agent)
       if (part.text && !part.text.includes('.png')) {
-        // Only update status if the text is long enough to be meaningful (avoid fragments)
-        // or if it's the beginning of a section.
-        if (part.text.length > 20 || part.text.includes("Title Text:")) {
+        // Skip visual brief and fragments that look like the brief structure
+        if (part.text.includes("Title Text:") || part.text.includes("Visual Hierarchy:") || part.text.includes("Iconography Suggestions:")) {
+          console.log("Visual Brief fragment skipped for status line.");
+        } else if (part.text.length > 20) {
+          // Only update status if the text is long enough to be meaningful feedback (avoid fragments)
           statusMsg.innerText = part.text;
         }
 
