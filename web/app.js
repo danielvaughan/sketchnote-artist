@@ -240,24 +240,16 @@ function handleAgentEvent(event, accumulatedText, statusMsg, resultImage, progre
 
       // 3. General Text Parts (Feedback from Agent)
       if (part.text && !part.text.includes('.png')) {
-        // Skip visual brief and fragments that look like the brief structure
-        if (part.text.includes("Title Text:") || part.text.includes("Visual Hierarchy:") || part.text.includes("Iconography Suggestions:")) {
-          console.log("Visual Brief fragment skipped for status line.");
-        } else if (part.text.length > 20) {
-          // Only update status if the text is long enough to be meaningful feedback (avoid fragments)
-          statusMsg.innerText = part.text;
-        }
-
-        // Detect error phrases to highlight in red
+        // Detect error phrases to highlight in red and handle UI states,
+        // but do not display the text in the status message as per user request.
         if (part.text.toLowerCase().includes("can't process") ||
           part.text.toLowerCase().includes("invalid") ||
           part.text.toLowerCase().includes("error")) {
+          statusMsg.innerText = part.text; // Still show explicit errors
           statusMsg.style.color = "var(--accent-color)";
           progressSection.classList.add('hidden'); // Stop animation if it's an error
           document.getElementById('idleState').classList.remove('hidden');
           document.getElementById('displayStage').classList.add('hidden'); // Hide stage on validation error
-        } else {
-          statusMsg.style.color = "var(--text-secondary)";
         }
       }
 
