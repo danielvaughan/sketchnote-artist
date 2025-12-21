@@ -1,18 +1,22 @@
 :root {
-  /* YouTube Light Mode Palette */
-  --bg-color: #F9F9F9;
+  /* Premium Slate and Accent Palette */
+  --bg-color: #F8FAFC;
   --surface-color: #FFFFFF;
-  --text-primary: #0F0F0F;
-  --text-secondary: #606060;
-  --accent-color: #FF0000;
-  /* YouTube Red */
-  --border-color: rgba(0, 0, 0, 0.1);
-  --shadow-subtle: 0 1px 4px rgba(0, 0, 0, 0.05);
+  --text-primary: #0F172A;
+  --text-secondary: #64748B;
+  --accent-color: #EF4444;
+  /* Modern Red */
+  --accent-hover: #DC2626;
+  --border-color: #E2E8F0;
+  --focus-ring: rgba(30, 64, 175, 0.4);
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
 
-  --font-family: 'Roboto', Arial, sans-serif;
-  --radius-pill: 24px;
-  --radius-card: 12px;
-  --player-bg: #000000;
+  --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  --radius-pill: 9999px;
+  --radius-card: 16px;
+  --player-bg: #020617;
 }
 
 body {
@@ -97,16 +101,13 @@ body {
   border: 1px solid var(--border-color);
   border-radius: var(--radius-pill);
   padding: 0.25rem 0.5rem 0.25rem 1.5rem;
-  transition: box-shadow 0.2s ease, border-color 0.2s ease;
-  box-shadow: var(--shadow-subtle);
-  /* Lift it slightly */
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--shadow-sm);
 }
 
 .search-box:focus-within {
-  border-color: #1C62B9;
-  /* YouTube Blue-ish for focus frame */
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.1);
-  margin-left: 0;
+  border-color: #3B82F6;
+  box-shadow: 0 0 0 4px var(--focus-ring), var(--shadow-md);
 }
 
 #youtubeUrl {
@@ -114,8 +115,8 @@ body {
   background: transparent;
   border: none;
   color: var(--text-primary);
-  font-size: 1.1rem;
-  /* readable size */
+  font-size: 1rem;
+  font-weight: 500;
   padding: 0.8rem 0;
   outline: none;
   font-family: inherit;
@@ -126,31 +127,58 @@ body {
   font-weight: 400;
 }
 
-#generateBtn {
-  background: #F0F0F0;
-  /* Light gray button background */
-  border: 1px solid transparent;
-  color: var(--text-primary);
-  width: 48px;
-  /* Bigger target */
-  height: 48px;
+.clear-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-left: 0.5rem;
+  margin-right: 0.25rem;
+  transition: all 0.2s;
+  opacity: 0.6;
+}
+
+.clear-btn:hover {
+  background: #F1F5F9;
+  opacity: 1;
+}
+
+.clear-btn.hidden {
+  display: none !important;
+}
+
+#generateBtn {
+  background: var(--text-primary);
+  border: none;
+  color: #FFFFFF;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: all 0.2s;
 }
 
 #generateBtn:hover {
-  background-color: #E5E5E5;
+  transform: scale(1.05);
+  box-shadow: var(--shadow-md);
+}
+
+#generateBtn:active {
+  transform: scale(0.95);
 }
 
 #generateBtn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  background-color: transparent;
+  transform: none;
 }
 
 .status-text {
@@ -190,15 +218,14 @@ body {
   width: 100%;
   aspect-ratio: 16 / 9;
   background-color: var(--player-bg);
-  /* Keep player black for contrast */
   border-radius: var(--radius-card);
   overflow: hidden;
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  /* Nicer drop shadow */
+  box-shadow: var(--shadow-lg);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 /* States */

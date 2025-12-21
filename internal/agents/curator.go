@@ -70,13 +70,15 @@ func NewCurator(ctx context.Context, apiKey string, store storage.Store) (agent.
 			// Validation
 			if !ValidateYouTubeURL(input) {
 				slog.Warn("Invalid input rejected", "agent", "Curator", "input_snippet", input)
+				msg := "I can't process that. Please provide a valid YouTube URL (e.g., https://www.youtube.com/watch?v=...)."
+				observability.Report(ctx, msg)
 				return func(yield func(*session.Event, error) bool) {
 					yield(&session.Event{
 						LLMResponse: adkmodel.LLMResponse{
 							Content: &genai.Content{
 								Role: "model",
 								Parts: []*genai.Part{
-									{Text: "I can't process that. Please provide a valid YouTube URL (e.g., https://www.youtube.com/watch?v=...)."},
+									{Text: msg},
 								},
 							},
 						},

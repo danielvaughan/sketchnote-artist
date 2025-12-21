@@ -13,12 +13,16 @@ import (
 
 // mockInvocationContext implements agent.InvocationContext for testing
 type mockInvocationContext struct {
-	agent.InvocationContext
+	context.Context
 	userContent *genai.Content
 }
 
 func (m *mockInvocationContext) UserContent() *genai.Content {
 	return m.userContent
+}
+
+func (m *mockInvocationContext) Agent() agent.Agent {
+	return nil
 }
 
 func (m *mockInvocationContext) Artifacts() agent.Artifacts {
@@ -101,6 +105,7 @@ func TestCurator_Run_GracefulFailure(t *testing.T) {
 
 	// Mock invocation context with invalid input
 	mockCtx := &mockInvocationContext{
+		Context: ctx,
 		userContent: &genai.Content{
 			Parts: []*genai.Part{
 				{Text: "this is not a valid url"},
