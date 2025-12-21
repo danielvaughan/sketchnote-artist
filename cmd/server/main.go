@@ -129,8 +129,8 @@ func main() {
 		version = strings.TrimSpace(string(versionBytes))
 	}
 
-	// Start the server
-	handler := adkrest.NewHandler(config, 30*time.Second)
+	// Start the server (increased timeout to 5 minutes for image generation)
+	handler := adkrest.NewHandler(config, 300*time.Second)
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -141,14 +141,40 @@ func main() {
 
 	// Wrap the ADK handler with custom routing for UI and images
 	finalHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Serve UI at root or /ui/
+		// Serve Flutter UI at /m/
+		if r.URL.Path == "/m" || strings.HasPrefix(r.URL.Path, "/m/") {
+			// Serve from the flutter build output
+			fileServer := http.FileServer(http.Dir("sketchnote_flutter/build/web"))
+			http.StripPrefix("/m", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				switch {
+				case strings.HasSuffix(r.URL.Path, ".js"):
+					w.Header().Set("Content-Type", "application/javascript")
+				case strings.HasSuffix(r.URL.Path, ".css"):
+					w.Header().Set("Content-Type", "text/css")
+				case strings.HasSuffix(r.URL.Path, ".html"):
+					w.Header().Set("Content-Type", "text/html")
+				case strings.HasSuffix(r.URL.Path, ".json"):
+					w.Header().Set("Content-Type", "application/json")
+				}
+				fileServer.ServeHTTP(w, r)
+			})).ServeHTTP(w, r)
+			return
+		}
+
+		// Serve UI at root or /index.html (Original Web UI)
 		if r.URL.Path == "/" || r.URL.Path == "/index.html" {
 			http.ServeFile(w, r, "web/index.html")
 			return
 		}
 
 		// Serve static assets (css, js)
+		// Serve static assets (css, js)
 		if r.URL.Path == "/style.css" || r.URL.Path == "/app.js" {
+			if strings.HasSuffix(r.URL.Path, ".css") {
+				w.Header().Set("Content-Type", "text/css")
+			} else if strings.HasSuffix(r.URL.Path, ".js") {
+				w.Header().Set("Content-Type", "application/javascript")
+			}
 			http.ServeFile(w, r, "web"+r.URL.Path)
 			return
 		}
