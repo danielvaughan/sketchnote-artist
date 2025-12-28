@@ -60,12 +60,25 @@ func NewImageGenerationTool(client *genai.Client, store storage.Store, folder st
 
 			filename = name + ext
 			observability.Report(ctx, fmt.Sprintf("\n%s The Artist is sketching...", "🎨"))
-			slog.Info("Generating image", "filename", filename)
+
+			// Log the image generation request with prompt details
+			promptPreview := prompt
+			if len(promptPreview) > 200 {
+				promptPreview = promptPreview[:200] + "..."
+			}
+			slog.Info("Generating image",
+				"filename", filename,
+				"model", config.ImageGeneratorToolModel,
+				"prompt_length", len(prompt),
+				"prompt_preview", promptPreview)
 
 			// Call Imagen 3 model
 			resp, err := client.Models.GenerateContent(ctx, config.ImageGeneratorToolModel, genai.Text(prompt), nil)
 			if err != nil {
-				slog.Error("Image generation failed", "error", err)
+				slog.Error("Image generation failed",
+					"error", err,
+					"model", config.ImageGeneratorToolModel,
+					"prompt_length", len(prompt))
 				return "", fmt.Errorf("generation failed: %w", err)
 			}
 
@@ -107,30 +120,82 @@ func NewImageGenerationTool(client *genai.Client, store storage.Store, folder st
 			var errorDetails strings.Builder
 			errorDetails.WriteString("No image data returned by model.")
 
-			if resp.PromptFeedback != nil && resp.PromptFeedback.BlockReason != "" && resp.PromptFeedback.BlockReason != genai.BlockedReasonUnspecified {
-				errorDetails.WriteString(fmt.Sprintf(" Prompt blocked: Reason=%v", resp.PromptFeedback.BlockReason))
-				if resp.PromptFeedback.BlockReasonMessage != "" {
-					errorDetails.WriteString(fmt.Sprintf(", Message=%s", resp.PromptFeedback.BlockReasonMessage))
-				}
-				errorDetails.WriteString(".")
+			// Log comprehensive error details with structured logging
+			logAttrs := []any{
+				"model", config.ImageGeneratorToolModel,
+				"prompt_length", len(prompt),
+				"prompt", prompt,
+				"filename", filename,
 			}
 
+			// Add PromptFeedback details if present
+			if resp.PromptFeedback != nil {
+				logAttrs = append(logAttrs,
+					"prompt_feedback_block_reason", resp.PromptFeedback.BlockReason,
+					"prompt_feedback_block_message", resp.PromptFeedback.BlockReasonMessage)
+
+				if resp.PromptFeedback.BlockReason != "" && resp.PromptFeedback.BlockReason != genai.BlockedReasonUnspecified {
+					errorDetails.WriteString(fmt.Sprintf(" Prompt blocked: Reason=%v", resp.PromptFeedback.BlockReason))
+					if resp.PromptFeedback.BlockReasonMessage != "" {
+						errorDetails.WriteString(fmt.Sprintf(", Message=%s", resp.PromptFeedback.BlockReasonMessage))
+					}
+					errorDetails.WriteString(".")
+				}
+			}
+
+			// Add UsageMetadata if available
+			if resp.UsageMetadata != nil {
+				logAttrs = append(logAttrs,
+					"prompt_token_count", resp.UsageMetadata.PromptTokenCount,
+					"candidates_token_count", resp.UsageMetadata.CandidatesTokenCount,
+					"total_token_count", resp.UsageMetadata.TotalTokenCount)
+			}
+
+			// Log detailed candidate information
+			logAttrs = append(logAttrs, "candidate_count", len(resp.Candidates))
+
 			for i, candidate := range resp.Candidates {
+				candidatePrefix := fmt.Sprintf("candidate_%d", i)
+				logAttrs = append(logAttrs,
+					candidatePrefix+"_finish_reason", string(candidate.FinishReason),
+					candidatePrefix+"_finish_message", candidate.FinishMessage)
+
 				errorDetails.WriteString(fmt.Sprintf(" Candidate %d: FinishReason=%s", i, candidate.FinishReason))
 				if candidate.FinishMessage != "" {
 					errorDetails.WriteString(fmt.Sprintf(", Message=%s", candidate.FinishMessage))
 				}
+
+				// Add safety ratings
 				if len(candidate.SafetyRatings) > 0 {
 					errorDetails.WriteString(" SafetyRatings=[")
-					for _, rating := range candidate.SafetyRatings {
+					for j, rating := range candidate.SafetyRatings {
 						errorDetails.WriteString(fmt.Sprintf("%s:%s ", rating.Category, rating.Probability))
+						logAttrs = append(logAttrs,
+							fmt.Sprintf("%s_safety_%d_category", candidatePrefix, j), string(rating.Category),
+							fmt.Sprintf("%s_safety_%d_probability", candidatePrefix, j), string(rating.Probability))
+						if rating.ProbabilityScore > 0 {
+							logAttrs = append(logAttrs,
+								fmt.Sprintf("%s_safety_%d_score", candidatePrefix, j), rating.ProbabilityScore)
+						}
+						if rating.Severity != "" {
+							logAttrs = append(logAttrs,
+								fmt.Sprintf("%s_safety_%d_severity", candidatePrefix, j), string(rating.Severity))
+						}
 					}
 					errorDetails.WriteString("]")
 				}
+
+				// Add grounding metadata if present
+				if candidate.GroundingMetadata != nil {
+					logAttrs = append(logAttrs,
+						candidatePrefix+"_has_grounding_metadata", true)
+				}
+
 				errorDetails.WriteString(".")
 			}
 
-			slog.Warn(errorDetails.String())
+			// Log with all structured attributes
+			slog.Warn(errorDetails.String(), logAttrs...)
 			return errorDetails.String(), nil
 		},
 	)
