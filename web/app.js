@@ -339,15 +339,20 @@ async function createSessionWithRetry(statusMsg, retries = 3) {
         return sessionData.id;
       }
 
-      // If server error (5xx), retry
-      if (sessionResp.status >= 500) {
-        throw new Error(`Server Error: ${sessionResp.status}`);
+      // If client error (4xx), abort retry
+      if (sessionResp.status >= 400 && sessionResp.status < 500) {
+        throw new Error(`Client Error: ${sessionResp.status}`);
       }
 
-      // If client error (4xx), stop retrying
-      throw new Error("Failed to create session");
+      // If server error (5xx), throw to retry
+      throw new Error(`Server Error: ${sessionResp.status}`);
 
     } catch (e) {
+      // Abort retry for client errors
+      if (e.message.startsWith("Client Error")) {
+        throw e;
+      }
+
       attempt++;
       console.warn(`Session creation attempt ${attempt} failed:`, e);
 
@@ -355,7 +360,7 @@ async function createSessionWithRetry(statusMsg, retries = 3) {
         throw e; // Rethrow final error to be caught by main handler
       }
 
-      statusMsg.innerText = "Waking up the curator...";
+      statusMsg.innerText = "Waking up the artist...";
       // Exponential backoff: 1s, 2s, 4s...
       const delay = Math.pow(2, attempt - 1) * 1000;
       await new Promise(resolve => setTimeout(resolve, delay));

@@ -124,7 +124,7 @@ func NewImageGenerationTool(client *genai.Client, store storage.Store, folder st
 			logAttrs := []any{
 				"model", config.ImageGeneratorToolModel,
 				"prompt_length", len(prompt),
-				"prompt", prompt,
+				"prompt_preview", promptPreview,
 				"filename", filename,
 			}
 
