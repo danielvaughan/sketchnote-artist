@@ -45,13 +45,7 @@ async function generateSketchnote() {
 
   try {
     // 1. Create Session
-    const sessionResp = await fetch(`/apps/${APP_NAME}/users/${USER_ID}/sessions`, {
-      method: 'POST'
-    });
-
-    if (!sessionResp.ok) throw new Error("Failed to create session");
-    const sessionData = await sessionResp.json();
-    const sessionId = sessionData.id;
+    const sessionId = await createSessionWithRetry(statusMsg);
 
     // 2. Start Streaming Request
     statusMsg.innerText = "Connecting to agent...";
@@ -329,6 +323,48 @@ function toggleClearBtn() {
     clearBtn.classList.remove('hidden');
   } else {
     clearBtn.classList.add('hidden');
+  }
+}
+
+async function createSessionWithRetry(statusMsg, retries = 3) {
+  let attempt = 0;
+  while (attempt < retries) {
+    try {
+      const sessionResp = await fetch(`/apps/${APP_NAME}/users/${USER_ID}/sessions`, {
+        method: 'POST'
+      });
+
+      if (sessionResp.ok) {
+        const sessionData = await sessionResp.json();
+        return sessionData.id;
+      }
+
+      // If client error (4xx), abort retry
+      if (sessionResp.status >= 400 && sessionResp.status < 500) {
+        throw new Error(`Client Error: ${sessionResp.status}`);
+      }
+
+      // If server error (5xx), throw to retry
+      throw new Error(`Server Error: ${sessionResp.status}`);
+
+    } catch (e) {
+      // Abort retry for client errors
+      if (e.message.startsWith("Client Error")) {
+        throw e;
+      }
+
+      attempt++;
+      console.warn(`Session creation attempt ${attempt} failed:`, e);
+
+      if (attempt >= retries) {
+        throw e; // Rethrow final error to be caught by main handler
+      }
+
+      statusMsg.innerText = "Waking up the artist...";
+      // Exponential backoff: 1s, 2s, 4s...
+      const delay = Math.pow(2, attempt - 1) * 1000;
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
   }
 }
 
