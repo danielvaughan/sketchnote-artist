@@ -2,6 +2,7 @@
 package main
 
 import (
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -11,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"google.golang.org/adk/agent"
@@ -31,6 +33,55 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
+
+// gzipResponseWriter wraps http.ResponseWriter to provide gzip compression.
+type gzipResponseWriter struct {
+	io.Writer
+	http.ResponseWriter
+}
+
+func (w gzipResponseWriter) Write(b []byte) (int, error) {
+	return w.Writer.Write(b)
+}
+
+// gzipWriterPool reuses gzip writers to reduce allocations.
+var gzipWriterPool = sync.Pool{
+	New: func() any {
+		return gzip.NewWriter(nil)
+	},
+}
+
+// gzipMiddleware compresses responses for clients that accept gzip encoding.
+// It skips compression for SSE endpoints and already-compressed content types.
+func gzipMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Skip compression for SSE endpoints (they need streaming without buffering)
+		if strings.HasSuffix(r.URL.Path, "_sse") || strings.Contains(r.URL.Path, "/run_sse") {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		// Skip if client doesn't accept gzip
+		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		gz := gzipWriterPool.Get().(*gzip.Writer)
+		gz.Reset(w)
+		defer func() {
+			if err := gz.Close(); err != nil {
+				slog.Error("Failed to close gzip writer", "error", err)
+			}
+			gzipWriterPool.Put(gz)
+		}()
+
+		w.Header().Set("Content-Encoding", "gzip")
+		w.Header().Del("Content-Length") // Length changes with compression
+
+		next.ServeHTTP(gzipResponseWriter{Writer: gz, ResponseWriter: w}, r)
+	})
+}
 
 func main() {
 	ctx := context.Background()
@@ -93,17 +144,29 @@ func main() {
 		dsn := fmt.Sprintf("user=%s password=%s database=%s host=/cloudsql/%s", dbUser, dbPass, dbName, dbConn)
 		slog.Info("Initializing PostgreSQL Session Service", "user", dbUser, "database", dbName, "connectionName", dbConn)
 		dbService, err := database.NewSessionService(postgres.Open(dsn), &gorm.Config{
-			Logger: logger.Default.LogMode(logger.Silent),
+			Logger:      logger.Default.LogMode(logger.Silent),
+			PrepareStmt: true, // Cache prepared statements for better performance
 		})
 		if err != nil {
 			slog.Error("Failed to initialize PostgreSQL session service", "error", err)
 			os.Exit(1)
 		}
+
+		// Configure connection pool for production
+		if sqlDB, err := dbService.DB().DB(); err == nil {
+			sqlDB.SetMaxOpenConns(25)               // Maximum open connections
+			sqlDB.SetMaxIdleConns(10)               // Maximum idle connections
+			sqlDB.SetConnMaxLifetime(5 * time.Minute) // Connection max lifetime
+			sqlDB.SetConnMaxIdleTime(1 * time.Minute) // Idle connection max lifetime
+			slog.Info("PostgreSQL connection pool configured", "maxOpen", 25, "maxIdle", 10)
+		}
+
 		sessionService = dbService
 	} else {
 		slog.Info("Initializing SQLite Session Service")
 		dbService, err := database.NewSessionService(sqlite.Open("sketchnote.db"), &gorm.Config{
-			Logger: logger.Default.LogMode(logger.Silent),
+			Logger:      logger.Default.LogMode(logger.Silent),
+			PrepareStmt: true, // Cache prepared statements for better performance
 		})
 		if err != nil {
 			slog.Error("Failed to initialize SQLite session service", "error", err)
@@ -146,15 +209,19 @@ func main() {
 	slog.Info("Starting REST server", "port", port)
 
 	// Wrap the ADK handler with custom routing for UI and images
-	finalHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	routingHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Serve UI at root or /ui/
 		if r.URL.Path == "/" || r.URL.Path == "/index.html" {
+			// Short cache for HTML (may change frequently)
+			w.Header().Set("Cache-Control", "public, max-age=60")
 			http.ServeFile(w, r, "web/index.html")
 			return
 		}
 
-		// Serve static assets (css, js)
+		// Serve static assets (css, js) with caching
 		if r.URL.Path == "/style.css" || r.URL.Path == "/app.js" {
+			// Cache static assets for 1 hour (versioned via query params)
+			w.Header().Set("Cache-Control", "public, max-age=3600")
 			http.ServeFile(w, r, "web"+r.URL.Path)
 			return
 		}
@@ -187,8 +254,8 @@ func main() {
 				}
 			}()
 
-			// Basic Content-Type sniffing or default to png
-			// Since we know these are generated as PNGs usually:
+			// Cache generated images for 24 hours (immutable content)
+			w.Header().Set("Cache-Control", "public, max-age=86400, immutable")
 			w.Header().Set("Content-Type", "image/png")
 			if _, err := io.Copy(w, reader); err != nil {
 				slog.Error("Failed to stream image content", "error", err)
@@ -199,6 +266,7 @@ func main() {
 		// Serve version endpoint
 		if r.URL.Path == "/version" {
 			w.Header().Set("Content-Type", "application/json")
+			w.Header().Set("Cache-Control", "no-cache")
 			if err := json.NewEncoder(w).Encode(map[string]string{"version": version}); err != nil {
 				slog.Error("Failed to write version response", "error", err)
 			}
@@ -215,6 +283,7 @@ func main() {
 				userEmail = "local-user"
 			}
 			w.Header().Set("Content-Type", "application/json")
+			w.Header().Set("Cache-Control", "private, no-cache")
 			if err := json.NewEncoder(w).Encode(map[string]string{"email": userEmail}); err != nil {
 				slog.Error("Failed to write user identity response", "error", err)
 			}
@@ -225,10 +294,17 @@ func main() {
 		handler.ServeHTTP(w, r)
 	})
 
+	// Apply gzip compression middleware
+	finalHandler := gzipMiddleware(routingHandler)
+
 	server := &http.Server{
 		Addr:              ":" + port,
 		Handler:           finalHandler,
 		ReadHeaderTimeout: 3 * time.Second,
+		ReadTimeout:       30 * time.Second,  // Limit time to read entire request
+		WriteTimeout:      5 * time.Minute,   // Match ADK handler timeout for long-running ops
+		IdleTimeout:       120 * time.Second, // Keep-alive connection timeout
+		MaxHeaderBytes:    1 << 20,           // 1MB max header size
 	}
 
 	if err := server.ListenAndServe(); err != nil {
