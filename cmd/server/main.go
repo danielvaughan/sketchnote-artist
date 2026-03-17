@@ -8,13 +8,16 @@ import (
 	"io"
 	"log"
 	"log/slog"
+	"mime"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
 	"google.golang.org/adk/agent"
 	"google.golang.org/adk/artifact"
+	"google.golang.org/adk/artifact/gcsartifact"
 	"google.golang.org/adk/cmd/launcher"
 	"google.golang.org/adk/memory"
 	"google.golang.org/adk/server/adkrest"
@@ -118,11 +121,31 @@ func main() {
 		os.Exit(1)
 	}
 
+	var artifactService artifact.Service
+	if os.Getenv("DEPLOYMENT_MODE") == "cloud_run" {
+		artifactsBucket := os.Getenv("GCS_BUCKET_ARTIFACTS")
+		if artifactsBucket == "" {
+			slog.Error("GCS_BUCKET_ARTIFACTS must be set in cloud_run mode")
+			os.Exit(1)
+		}
+		slog.Info("Initializing GCS Artifact Service", "bucket", strings.ReplaceAll(artifactsBucket, "\n", ""))
+		gcsSvc, err := gcsartifact.NewService(ctx, artifactsBucket)
+		if err != nil {
+			slog.Error("Failed to initialize GCS artifact service", "error", err)
+			os.Exit(1)
+		}
+		artifactService = gcsSvc
+	} else {
+		artifactService = artifact.InMemoryService()
+	}
+
 	config := &launcher.Config{
 		AgentLoader:     agent.NewSingleLoader(agentInstance),
 		SessionService:  sessionService,
-		ArtifactService: artifact.InMemoryService(),
-		MemoryService:   memory.InMemoryService(),
+		ArtifactService: artifactService,
+		// ADK v0.6.0 has no persistent memory service; InMemoryService is acceptable
+		// because this project does not use ADK memory state.
+		MemoryService: memory.InMemoryService(),
 	}
 
 	// Cache version at startup
@@ -153,9 +176,12 @@ func main() {
 			return
 		}
 
-		// Serve static assets (css, js)
-		if r.URL.Path == "/style.css" || r.URL.Path == "/app.js" {
-			http.ServeFile(w, r, "web"+r.URL.Path)
+		// Serve static web assets from web/ directory (css, js, fonts, icons).
+		// Generated images are served separately via the /images/ handler below.
+		ext := filepath.Ext(r.URL.Path)
+		staticExts := map[string]bool{".css": true, ".js": true, ".ico": true, ".svg": true, ".woff2": true}
+		if staticExts[ext] {
+			http.FileServer(http.Dir("web")).ServeHTTP(w, r)
 			return
 		}
 
@@ -187,9 +213,11 @@ func main() {
 				}
 			}()
 
-			// Basic Content-Type sniffing or default to png
-			// Since we know these are generated as PNGs usually:
-			w.Header().Set("Content-Type", "image/png")
+			contentType := mime.TypeByExtension(filepath.Ext(filename))
+			if contentType == "" {
+				contentType = "image/png" // fallback for unknown or extension-less filenames
+			}
+			w.Header().Set("Content-Type", contentType)
 			if _, err := io.Copy(w, reader); err != nil {
 				slog.Error("Failed to stream image content", "error", err)
 			}
