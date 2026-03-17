@@ -9,6 +9,7 @@ import (
 
 	"google.golang.org/adk/agent"
 	"google.golang.org/adk/agent/llmagent"
+	adkmodel "google.golang.org/adk/model"
 	"google.golang.org/adk/model/gemini"
 	"google.golang.org/adk/session"
 	"google.golang.org/adk/tool"
@@ -66,8 +67,18 @@ func NewArtist(ctx context.Context, apiKey string, store storage.Store) (agent.A
 			// Check if the visual brief exists in the state
 			_, err := ctx.Session().State().Get("visual_brief")
 			if err != nil {
-				slog.Warn("Artist skipping execution: visual_brief missing from state", "error", err)
-				return func(_ func(*session.Event, error) bool) {}
+				msg := "Artist cannot proceed: visual_brief is missing from session state."
+				slog.Error("Artist aborting: visual_brief missing", "error", err)
+				return func(yield func(*session.Event, error) bool) {
+					yield(&session.Event{
+						LLMResponse: adkmodel.LLMResponse{
+							Content: &genai.Content{
+								Role:  "model",
+								Parts: []*genai.Part{{Text: msg}},
+							},
+						},
+					}, nil)
+				}
 			}
 
 			observability.Report(ctx, fmt.Sprintf("%s The Artist is reading the visual brief...", ArtistEmoji))
