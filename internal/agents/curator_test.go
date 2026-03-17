@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/danielvaughan/sketchnote-artist/internal/storage"
 	"google.golang.org/adk/agent"
@@ -11,48 +12,44 @@ import (
 	"google.golang.org/genai"
 )
 
-// mockInvocationContext implements agent.InvocationContext for testing
+// mockSession is a minimal session stub satisfying session.Session.
+// agent.Run calls ctx.Session().ID() unconditionally for telemetry before
+// entering user code, so Session() must not return nil.
+type mockSession struct{}
+
+func (m *mockSession) ID() string                { return "test-session" }
+func (m *mockSession) AppName() string           { return "test-app" }
+func (m *mockSession) UserID() string            { return "test-user" }
+func (m *mockSession) State() session.State      { return nil }
+func (m *mockSession) Events() session.Events    { return nil }
+func (m *mockSession) LastUpdateTime() time.Time { return time.Time{} }
+
+// mockInvocationContext implements agent.InvocationContext for testing.
+//
+// NOTE: This manually implements the full agent.InvocationContext interface.
+// This is unavoidable in Go without ADK providing test helpers. If the
+// interface gains new methods in a future ADK version, add them here or
+// the package will fail to compile.
 type mockInvocationContext struct {
 	context.Context
 	userContent *genai.Content
 }
 
-func (m *mockInvocationContext) UserContent() *genai.Content {
-	return m.userContent
-}
+func (m *mockInvocationContext) UserContent() *genai.Content { return m.userContent }
+func (m *mockInvocationContext) Agent() agent.Agent          { return nil }
+func (m *mockInvocationContext) Artifacts() agent.Artifacts  { return nil }
+func (m *mockInvocationContext) Session() session.Session    { return &mockSession{} }
+func (m *mockInvocationContext) Memory() agent.Memory        { return nil }
+func (m *mockInvocationContext) InvocationID() string        { return "test-invocation" }
+func (m *mockInvocationContext) Branch() string              { return "test-branch" }
+func (m *mockInvocationContext) RunConfig() *agent.RunConfig { return nil }
+func (m *mockInvocationContext) EndInvocation()              {}
+func (m *mockInvocationContext) Ended() bool                 { return false }
 
-func (m *mockInvocationContext) Agent() agent.Agent {
-	return nil
-}
-
-func (m *mockInvocationContext) Artifacts() agent.Artifacts {
-	return nil
-}
-
-func (m *mockInvocationContext) Session() session.Session {
-	return nil
-}
-
-func (m *mockInvocationContext) Memory() agent.Memory {
-	return nil
-}
-
-func (m *mockInvocationContext) InvocationID() string {
-	return "test-invocation"
-}
-
-func (m *mockInvocationContext) Branch() string {
-	return "test-branch"
-}
-
-func (m *mockInvocationContext) RunConfig() *agent.RunConfig {
-	return nil
-}
-
-func (m *mockInvocationContext) EndInvocation() {}
-
-func (m *mockInvocationContext) Ended() bool {
-	return false
+// WithContext returns a new context with the given context.Context embedded.
+// Required by agent.InvocationContext since ADK v0.6.0.
+func (m *mockInvocationContext) WithContext(ctx context.Context) agent.InvocationContext {
+	return &mockInvocationContext{Context: ctx, userContent: m.userContent}
 }
 
 func TestValidateYouTubeURL(t *testing.T) {
