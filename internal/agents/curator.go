@@ -48,6 +48,21 @@ func NewCurator(ctx context.Context, apiKey string, store storage.Store) (agent.
 		return nil, fmt.Errorf("failed to create file saver tool: %w", err)
 	}
 
+	// Build the inner LLM agent once. {youtube_url} in CuratorInstruction is
+	// resolved by ADK from session state at invocation time (non-optional, so
+	// the key must be present — see state Set call below).
+	innerAgent, err := llmagent.New(llmagent.Config{
+		Name:        "Curator",
+		Model:       model,
+		Description: "Curates video content to create a visual brief for the artist.",
+		Instruction: prompts.CuratorInstruction,
+		OutputKey:   "visual_brief",
+		Tools:       []tool.Tool{ytTool, fileTool},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create inner curator agent: %w", err)
+	}
+
 	return agent.New(agent.Config{
 		Name:        "Curator",
 		Description: "Curates video content to create a visual brief for the artist.",
@@ -89,21 +104,11 @@ func NewCurator(ctx context.Context, apiKey string, store storage.Store) (agent.
 			// Report progress via context
 			observability.Report(ctx, fmt.Sprintf("%s The Curator is analyzing the video to create a visual brief: %s", CuratorEmoji, input))
 
-			// Inject URL into instruction
-			instruction := strings.ReplaceAll(prompts.CuratorInstruction, "{YouTubeURL}", input)
-
-			// Create dynamic agent
-			innerAgent, err := llmagent.New(llmagent.Config{
-				Name:        "Curator",
-				Model:       model,
-				Description: "Curates video content to create a visual brief for the artist.",
-				Instruction: instruction,
-				OutputKey:   "visual_brief",
-				Tools:       []tool.Tool{ytTool, fileTool},
-			})
-			if err != nil {
+			// Set youtube_url in session state so the {youtube_url} ADK template
+			// placeholder in CuratorInstruction resolves correctly at invocation time.
+			if err := ctx.Session().State().Set("youtube_url", input); err != nil {
 				return func(yield func(*session.Event, error) bool) {
-					yield(nil, fmt.Errorf("failed to create inner agent: %w", err))
+					yield(nil, fmt.Errorf("failed to set youtube_url in state: %w", err))
 				}
 			}
 
