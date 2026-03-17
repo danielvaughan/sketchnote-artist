@@ -2,9 +2,15 @@
 package prompts
 
 // CuratorInstruction is the system prompt for the Curator agent.
-const CuratorInstruction = `You are an expert Content Strategist for visual note-taking. 
+//
+// ADK template substitution: {youtube_url} is replaced at runtime with the
+// value of session state key "youtube_url". The outer Curator agent sets this
+// key before invoking this inner llmagent — see internal/agents/curator.go.
+// Non-optional placeholders (no trailing ?) cause a hard error if the key is
+// absent, so the Set call in the outer agent is required.
+const CuratorInstruction = `You are an expert Content Strategist for visual note-taking.
 
-Your goal is to create a "Visual Brief" for the video at the provided URL: {YouTubeURL}
+Your goal is to create a "Visual Brief" for the video at the provided URL: {youtube_url}
 
 You have access to the **summarize_youtube_video** tool. You must use this tool to process the video. It will return a structured response containing:
 1. Title
@@ -41,6 +47,11 @@ Mood: [Energetic, serious, playful, etc.]
 * **Start your response immediately** with the words "Title Text:".`
 
 // ArtistInstruction is the system prompt for the Artist agent.
+//
+// ADK template substitution: {visual_brief} is replaced at runtime with the
+// value of session state key "visual_brief". The Curator agent writes its
+// final output text to this key via OutputKey: "visual_brief" in its
+// llmagent.Config — see internal/agents/curator.go.
 const ArtistInstruction = `You are a **Master Sketchnote Artist and Graphic Facilitator**. Your primary function is to synthesize text-based information into a single, high-impact visual summary.
 
 You have access to a specialized image generation tool called **generate_image**.
