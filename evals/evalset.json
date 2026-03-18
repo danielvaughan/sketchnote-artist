@@ -1,0 +1,28 @@
+[
+  {
+    "name": "invalid_input_graceful_failure",
+    "description": "Non-URL input should return a helpful error without calling any tools",
+    "conversation": [
+      {
+        "role": "user",
+        "content": "hello world"
+      }
+    ],
+    "expected_tool_use": [],
+    "expected_intermediate_agents": [],
+    "reference": "I can't process that. Please provide a valid YouTube URL"
+  },
+  {
+    "name": "invalid_domain_graceful_failure",
+    "description": "Non-YouTube URL should be rejected before any LLM tool call",
+    "conversation": [
+      {
+        "role": "user",
+        "content": "https://www.google.com/search?q=test"
+      }
+    ],
+    "expected_tool_use": [],
+    "expected_intermediate_agents": [],
+    "reference": "I can't process that. Please provide a valid YouTube URL"
+  }
+]
