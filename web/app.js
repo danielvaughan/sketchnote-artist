@@ -312,7 +312,7 @@ function resetUI() {
   idleState.classList.remove('hidden');
   clearBtn.classList.add('hidden'); // Hide clear button
 
-  statusMsg.innerText = "Ready to create...";
+  statusMsg.innerText = "Paste a URL and press Enter ↵";
   statusMsg.style.color = "var(--text-secondary)";
 }
 

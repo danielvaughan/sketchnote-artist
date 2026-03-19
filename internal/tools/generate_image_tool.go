@@ -84,6 +84,9 @@ func NewImageGenerationTool(client *genai.Client, store storage.Store, folder st
 
 			// Save the image bytes to a file
 			for _, candidate := range resp.Candidates {
+				if candidate.Content == nil {
+					continue
+				}
 				for _, part := range candidate.Content.Parts {
 					if part.InlineData != nil {
 						// Ensure filename is unique if it already exists

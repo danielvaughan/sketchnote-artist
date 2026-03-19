@@ -76,3 +76,6 @@ test-results/
 # SQLite database
 sketchnote.db
 cloud-sql-proxy
+
+# Auto Claude data directory
+.auto-claude/
