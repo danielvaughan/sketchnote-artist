@@ -28,7 +28,7 @@ steps:
   # Build and Push using Kaniko for layer caching and faster builds
   - name: 'gcr.io/kaniko-project/executor:latest'
     args:
-      - '--destination=$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/sketchnote-artist:$COMMIT_SHA'
+      - '--destination=$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/sketchnote-artist:$_COMMIT_SHA'
       - '--cache=true'
       - '--cache-ttl=24h'
 
@@ -40,12 +40,13 @@ steps:
       - 'deploy'
       - '$_SERVICE_NAME'
       - '--image'
-      - '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/sketchnote-artist:$COMMIT_SHA'
+      - '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/sketchnote-artist:$_COMMIT_SHA'
       - '--region'
       - '$_REGION'
 
 substitutions:
   _REGION: us-central1
+  _COMMIT_SHA: latest
 
 options:
   logging: CLOUD_LOGGING_ONLY
