@@ -27,7 +27,7 @@ using a two-agent sequential workflow powered by Google ADK Go.
 ## Tools
 
 | Tool | Model | Purpose |
-|------|-------|---------|
+| --- | --- | --- |
 | `summarize_youtube_video` | `gemini-3-flash-preview` | Streams video transcript/content from YouTube |
 | `generate_image` | `gemini-3-pro-image-preview` | Calls Imagen to produce PNG |
 | `save_to_file` | — | Persists text content to storage backend |
