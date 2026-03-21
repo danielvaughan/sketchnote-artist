@@ -34,6 +34,10 @@ resource "google_cloud_run_v2_service" "default" {
         value = google_storage_bucket.visual_briefs.name
       }
       env {
+        name  = "GCS_BUCKET_ARTIFACTS"
+        value = google_storage_bucket.images.name
+      }
+      env {
         name  = "GCS_BUCKET_IMAGES"
         value = google_storage_bucket.images.name
       }
@@ -95,9 +99,9 @@ resource "google_storage_bucket_iam_member" "run_sa_briefs_creator" {
   member = "serviceAccount:${google_service_account.run_sa.email}"
 }
 
-resource "google_storage_bucket_iam_member" "run_sa_images_creator" {
+resource "google_storage_bucket_iam_member" "run_sa_images_user" {
   bucket = google_storage_bucket.images.name
-  role   = "roles/storage.objectCreator"
+  role   = "roles/storage.objectUser"
   member = "serviceAccount:${google_service_account.run_sa.email}"
 }
 
